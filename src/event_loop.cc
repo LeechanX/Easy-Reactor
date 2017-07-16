@@ -1,5 +1,6 @@
 #include "event_loop.h"
 #include "timer_queue.h"
+#include "print_error.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -21,13 +22,9 @@ void timerqueue_cb(event_loop* loop, int fd, void *args)
 event_loop::event_loop()
 {
     _epfd = ::epoll_create1(0);
-    if (_epfd == -1)
-    {
-        fprintf(stderr, "epoll_create1 return error %s", strerror(errno));
-        exit(1);
-    }
+    exit_if(_epfd == -1, "when epoll_create1()");
     _timer_que = new timer_queue();
-    //exit if
+    exit_if(_timer_que == NULL, "when new timer_queue");
     //register timer event to event loop
     add_ioev(_timer_que->notifier(), timerqueue_cb, EPOLLIN, _timer_que);
 }
@@ -69,7 +66,7 @@ void event_loop::process_evs()
                 }
                 else
                 {
-                    fprintf(stderr, "fd %d get error, delete it from epoll\n", _fired_evs[i].data.fd);
+                    error_if(1, "fd %d get error, delete it from epoll", _fired_evs[i].data.fd);
                     del_ioev(_fired_evs[i].data.fd);
                 }
             }
@@ -112,8 +109,8 @@ void event_loop::add_ioev(int fd, io_callback* proc, int mask, void* args)
     struct epoll_event event;
     event.events = f_mask;
     event.data.fd = fd;
-    if (::epoll_ctl(_epfd, op, fd, &event) == -1)
-        fprintf(stderr, "epoll_ctl error: %s\n", strerror(errno));
+    int ret = ::epoll_ctl(_epfd, op, fd, &event);
+    sys_error_if(ret == -1, "epoll_ctl");
 }
 
 void event_loop::del_ioev(int fd, int mask)
@@ -122,21 +119,22 @@ void event_loop::del_ioev(int fd, int mask)
     if (it == _io_evs.end())
         return ;
     int& o_mask = it->second.mask;
+    int ret;
     //remove mask from o_mask
     o_mask = o_mask & (~mask);
     if (o_mask == 0)
     {
         _io_evs.erase(it);
-        if (::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL) == -1)
-            fprintf(stderr, "epoll_ctl EPOLL_CTL_DEL error: %s\n", strerror(errno));
+        ret = ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL);
+        sys_error_if(ret == -1, "epoll_ctl EPOLL_CTL_DEL");
     }
     else
     {
         struct epoll_event event;
         event.events = o_mask;
         event.data.fd = fd;
-        if (::epoll_ctl(_epfd, EPOLL_CTL_MOD, fd, &event) == -1)
-            fprintf(stderr, "epoll_ctl EPOLL_CTL_MOD error: %s\n", strerror(errno));
+        ret = ::epoll_ctl(_epfd, EPOLL_CTL_MOD, fd, &event);
+        sys_error_if(ret == -1, "epoll_ctl EPOLL_CTL_MOD");
     }
 }
 

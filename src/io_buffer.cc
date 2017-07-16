@@ -4,6 +4,7 @@
 #include <sys/uio.h>
 #include <sys/ioctl.h>
 #include "io_buffer.h"
+#include "print_error.h"
 
 io_buffer* buffer_pool::alloc(uint32_t N)
 {
@@ -30,7 +31,7 @@ io_buffer* buffer_pool::alloc(uint32_t N)
     {
         if (_allocnt[index] * index >= u100M)
         {
-            //fprintf(stderr, "memory used excessively");
+            //TODO: limit memory
             ::exit(1);
         }
         _allocnt[index] += 1;
@@ -64,78 +65,86 @@ buffer_pool::buffer_pool()
     io_buffer* prev;
 
     _pool[u1K] = new io_buffer(u1K);
-        //exit_if
+    exit_if(_pool[u1K] == NULL, "new io_buffer");
+
     prev = _pool[u1K];
-        //1K buffer count: 2W
+    //1K buffer count: 2W
     for (int i = 1;i < 20000; ++i)
     {
         prev->next = new io_buffer(u1K);
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u4K] = new io_buffer(u4K);
-        //exit_if
+    exit_if(_pool[u4K] == NULL, "new io_buffer");
+
     prev = _pool[u4K];
-        //4K buffer count: 8K
+    //4K buffer count: 8K
     for (int i = 1;i < 8000; ++i)
     {
         prev->next = new io_buffer(u4K);
-            //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u16K] = new io_buffer(u16K);
-        //exit_if
+    exit_if(_pool[u16K] == NULL, "new io_buffer");
+
     prev = _pool[u16K];
-        //16K buffer count: 2K
+    //16K buffer count: 2K
     for (int i = 1;i < 2000; ++i)
     {
         prev->next = new io_buffer(u16K);
-            //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u64K] = new io_buffer(u64K);
-        //exit_if
+    exit_if(_pool[u64K] == NULL, "new io_buffer");
+
     prev = _pool[u64K];
-        //64K buffer count: 1K
+    //64K buffer count: 1K
     for (int i = 1;i < 1000; ++i)
     {
         prev->next = new io_buffer(u64K);
-            //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u256K] = new io_buffer(u256K);
-        //exit_if
+    exit_if(_pool[u256K] == NULL, "new io_buffer");
+
     prev = _pool[u256K];
-        //256K buffer count: 200
+    //256K buffer count: 200
     for (int i = 1;i < 200; ++i)
     {
         prev->next = new io_buffer(u256K);
-            //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u1M] = new io_buffer(u1M);
-        //exit_if
+    exit_if(_pool[u1M] == NULL, "new io_buffer");
+
     prev = _pool[u1M];
-        //1M buffer count: 100
+    //1M buffer count: 100
     for (int i = 1;i < 100; ++i)
     {
         prev->next = new io_buffer(u1M);
-            //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 
     _pool[u4M] = new io_buffer(u4M);
-    //exit_if
+    exit_if(_pool[u4M] == NULL, "new io_buffer");
+
     prev = _pool[u4M];
     //4M buffer count: 25
     for (int i = 1;i < 25; ++i)
     {
         prev->next = new io_buffer(u4M);
-        //exit_if
+        exit_if(prev->next == NULL, "new io_buffer");
         prev = prev->next;
     }
 }
@@ -149,22 +158,23 @@ int input_buffer::read_data(int fd)
     uint32_t rn;
     if (::ioctl(fd, FIONREAD, &rn) == -1)
     {
-            //report
+        sys_error_if(1, "ioctl FIONREAD");
         return -1;
     }
     if (!_buf)
     {
         _buf = buffer_pool::ins()->alloc(rn);
-            //exit_if
+        exit_if(_buf == NULL, "alloc io_buffer");
+
         int rd = ::read(fd, _buf->data, rn);
         if (rd == -1)
         {
-                //report
+            sys_error_if(1, "read");
             return -1;
         }
         else
         {
-                //must read out rn bytes
+            //must read out rn bytes
             _buf->length = rn;
         }
     }
@@ -172,7 +182,7 @@ int input_buffer::read_data(int fd)
     {
         if (_buf->capacity - _buf->length >= rn)
         {
-                //can hold on
+            //can hold on
             if (_buf->head != 0)
             {
                 ::memmove(_buf->data, _buf->data + _buf->head, _buf->length);
@@ -181,34 +191,35 @@ int input_buffer::read_data(int fd)
             int rd = ::read(fd, _buf->data + _buf->length, rn);
             if (rd == -1)
             {
-                    //report
+                sys_error_if(1, "read");
                 return -1;
             }
             else
             {
-                    //must read out rn bytes
+                //must read out rn bytes
                 _buf->length += rn;
             }
         }
         else
         {
-                //get new
+            //get new
             io_buffer* new_buf = buffer_pool::ins()->alloc(rn + _buf->length);
-                //exit_if
+            exit_if(new_buf == NULL, "alloc io_buffer");
+
             ::memcpy(new_buf, _buf->data + _buf->head, _buf->length);
             new_buf->length = _buf->length;
             buffer_pool::ins()->revert(_buf);
             _buf = new_buf;
-                //append to _buf->length
+            //append to _buf->length
             int rd = ::read(fd, _buf->data + _buf->length, rn);
             if (rd == -1)
             {
-                    //report
+                sys_error_if(1, "read");
                 return -1;
             }
             else
             {
-                    //must read out rn bytes
+                //must read out rn bytes
                 _buf->length += rn;
             }
         }
@@ -221,7 +232,7 @@ void input_buffer::pop(uint32_t len)
     assert(_buf && len <= _buf->length);
     _buf->length -= len;
     _buf->head += len;
-        //buf is empty
+    //buf is empty
     if (!_buf->length)
     {
         buffer_pool::ins()->revert(_buf);
@@ -239,7 +250,7 @@ void output_buffer::send_data(const char* data, uint32_t datlen)
 {
     if (_buf_lst.empty())
     {
-            //alloc for 4K
+        //alloc for 4K
         int buf_cnt = datlen / buffer_pool::u4K;
         if (datlen % buffer_pool::u4K)
         {
@@ -248,7 +259,7 @@ void output_buffer::send_data(const char* data, uint32_t datlen)
         for (int i = 0;i < buf_cnt; ++i)
         {
             io_buffer* new_buf = buffer_pool::ins()->alloc(buffer_pool::u4K);
-                //exit if
+            exit_if(new_buf == NULL, "alloc io_buffer");
             _buf_lst.push_back(new_buf);
         }
         buff_it it = _buf_lst.begin();
@@ -287,13 +298,13 @@ void output_buffer::send_data(const char* data, uint32_t datlen)
         }
         else
         {
-                //memcpy
+            //memcpy
             uint32_t left_len = buffer->capacity - buffer->length;
             ::memcpy(buffer->data + buffer->length, data, left_len);
             datlen -= left_len;
             data += left_len;
 
-                //alloc for 4K
+            //alloc for 4K
             int buf_cnt = datlen / buffer_pool::u4K;
             if (datlen % buffer_pool::u4K)
             {
@@ -303,7 +314,7 @@ void output_buffer::send_data(const char* data, uint32_t datlen)
             for (int i = 0;i < buf_cnt; ++i)
             {
                 io_buffer* new_buf = buffer_pool::ins()->alloc(buffer_pool::u4K);
-                    //exit if
+                exit_if(new_buf == NULL, "alloc io_buffer");
                 _buf_lst.push_back(new_buf);
                 if (i == 0)
                 {
@@ -342,7 +353,7 @@ int output_buffer::write_fd(int fd)
     if (_buf_lst.size() > 100)
     {
         revert_all();
-            //report
+        error_if(1, "output too large");
         return -1;
     }
     for (buff_it it = _buf_lst.begin();it != _buf_lst.end(); ++it)

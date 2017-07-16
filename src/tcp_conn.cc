@@ -27,7 +27,7 @@ void tcp_conn::handle_read()
     int ret = ibuf.read_data(_connfd);
     if (ret != 0)
     {
-            //pass
+        //pass
     }
     msg_head header;
     while (ibuf.length() >= MSG_HEAD_LENGTH)

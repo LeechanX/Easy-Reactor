@@ -3,12 +3,12 @@
 #include <pthread.h>
 #include <sys/timerfd.h>
 #include "timer_queue.h"
+#include "print_error.h"
 
 timer_queue::timer_queue(): _count(0), _next_timer_id(0), _pioneer(-1/*= uint32_t max*/)
 {
     _timerfd = ::timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
-    //report if
-    //TODO: add timerfd to event loop here
+    exit_if(_timerfd == -1, "timerfd_create()");
 }
 
 timer_queue::~timer_queue()
@@ -34,7 +34,7 @@ void timer_queue::cancel_timer(int timer_id)
     mit it = _position.find(timer_id);
     if (it == _position.end())
     {
-        //report
+        error_if(1, "no such a timerid %d", timer_id);
         return ;
     }
     int pos = it->second;

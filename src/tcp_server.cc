@@ -1,5 +1,5 @@
 #include "tcp_server.h"
-
+#include "print_error.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -16,25 +16,26 @@ void accepter_cb(event_loop* loop, int fd, void *args)
 tcp_server::tcp_server(const char* ip, uint16_t port)
 {
     _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
-    //exit if
+    exit_if(_sockfd == -1, "socket()");
 
     _reservfd = ::open("/tmp/reactor_accepter", O_CREAT | O_RDONLY | O_CLOEXEC, 0666);
-    //report if
+    sys_error_if(_reservfd == -1, "open()");
 
     struct sockaddr_in servaddr;
     servaddr.sin_family = AF_INET;
-    ::inet_aton(ip, &servaddr.sin_addr);
-    //exit if
+    int ret = ::inet_aton(ip, &servaddr.sin_addr);
+    exit_if(ret == 0, "ip format %s", ip);
+
     servaddr.sin_port = htons(port);
 
-    int ret = ::bind(_sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
-    //exit if
+    ret = ::bind(_sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
+    exit_if(ret == -1, "bind()");
 
     ret = ::listen(_sockfd, 500);
-    //exit if
+    exit_if(ret == -1, "listen()");
 
     _loop = new event_loop();
-    //exit if
+    exit_if(_loop == NULL, "new event_loop");
 
     _addrlen = sizeof (struct sockaddr_in);
 
@@ -76,14 +77,14 @@ void tcp_server::do_accept()
             }
             else
             {
-                //report error, exit
+                exit_if(1, "accept()");
             }
         }
         else if (conn_full)
         {
             ::close(connfd);
             _reservfd = ::open("/tmp/reactor_accepter", O_CREAT | O_RDONLY | O_CLOEXEC, 0666);
-            //report if
+            sys_error_if(_reservfd == -1, "open()");
         }
         else
         {

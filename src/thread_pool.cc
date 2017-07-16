@@ -1,5 +1,6 @@
 #include "thread_pool.h"
 #include "event_loop.h"
+#include "print_error.h"
 
 void msg_comming_cb(event_loop* loop, int fd, void *args)
 {
@@ -25,7 +26,7 @@ void* thread_domain(void* args)
 {
     thread_queue* queue = (thread_queue*)args;
     event_loop* loop = new event_loop();
-    //exit if
+    exit_if(loop == NULL, "new event_loop()");
     loop->add_ioev(queue->notifier(), msg_comming_cb, EPOLLIN | EPOLLET, queue);
     loop->process_evs();
     return NULL;
@@ -33,7 +34,7 @@ void* thread_domain(void* args)
 
 thread_pool::thread_pool(int thread_cnt): _curr_index(0), _thread_cnt(thread_cnt)
 {
-    //exit if thread_cnt <= 0
+    exit_if(thread_cnt <= 0, "thread_cnt %d", thread_cnt);
     _pool = new thread_queue*[thread_cnt];
     _tids = new pthread_t[thread_cnt];
     int ret;
@@ -41,9 +42,10 @@ thread_pool::thread_pool(int thread_cnt): _curr_index(0), _thread_cnt(thread_cnt
     {
         _pool[i] = new thread_queue();
         ret = ::pthread_create(&_tids[i], NULL, thread_domain, _pool[i]);
-        //exit if
+        exit_if(ret == -1, "pthread_create");
+
         ret = ::pthread_detach(_tids[i]);
-        //report if
+        sys_error_if(ret == -1, "pthread_detach");
     }
 }
 

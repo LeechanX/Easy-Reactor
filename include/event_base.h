@@ -1,9 +1,8 @@
 #ifndef __EVENT_BASE_H__
 #define __EVENT_BASE_H__
 
-#include <stdio.h>
 #include <stdint.h>
-
+#include <stdio.h>//NULL
 class event_loop;
 
 typedef void io_callback(event_loop* loop, int fd, void *args);//IO事件回调函数
