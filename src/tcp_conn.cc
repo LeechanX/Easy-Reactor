@@ -27,7 +27,7 @@ void tcp_conn::handle_read()
     int ret = ibuf.read_data(_connfd);
     if (ret != 0)
     {
-        //pass
+        //TODO: read data error
     }
     msg_head header;
     while (ibuf.length() >= MSG_HEAD_LENGTH)
@@ -36,7 +36,7 @@ void tcp_conn::handle_read()
         if (header.length > MSG_LENGTH_LIMIT || header.length < 0)
         {
             //data format is messed up
-            //clear buf, close
+            //TODO: clear buf, close
             break;
         }
         if (ibuf.length() < MSG_HEAD_LENGTH + header.length)
@@ -49,8 +49,7 @@ void tcp_conn::handle_read()
         if (!cb)
         {
             //data format is messed up
-            //clear buf, close
-            //todo
+            //TODO: clear buf, close
             break;
         }
         ibuf.pop(MSG_HEAD_LENGTH);
@@ -65,11 +64,9 @@ void tcp_conn::handle_write()
     if (obuf.length())
     {
         int ret = obuf.write_fd(_connfd);
-        //ret......
-        //TODO
-        if (ret != 0)
+        if (ret == -1)
         {
-            //......
+            //TODO: write data error
         }
     }
     if (!obuf.length())

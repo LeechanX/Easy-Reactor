@@ -19,7 +19,7 @@ void msg_comming_cb(event_loop* loop, int fd, void *args)
         }
         else
         {
-            //......
+            //TODO: other message between threads
         }
     }
 }
