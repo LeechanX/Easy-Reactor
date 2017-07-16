@@ -1,4 +1,5 @@
 #include "tcp_server.h"
+#include "tcp_conn.h"
 #include "print_error.h"
 #include <stdio.h>
 #include <fcntl.h>
@@ -100,7 +101,8 @@ void tcp_server::do_accept()
             }
             else//register in self thread
             {
-
+                tcp_conn* conn = new tcp_conn(connfd, _loop);
+                exit_if(conn == NULL, "new tcp_conn");
             }
         }
     }

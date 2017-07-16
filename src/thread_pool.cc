@@ -1,4 +1,5 @@
 #include "thread_pool.h"
+#include "tcp_conn.h"
 #include "event_loop.h"
 #include "print_error.h"
 
@@ -13,7 +14,8 @@ void msg_comming_cb(event_loop* loop, int fd, void *args)
         msgs.pop();
         if (msg.cmd_type == queue_msg::NEW_CONN)
         {
-            //new conn
+            tcp_conn* conn = new tcp_conn(msg.connfd, loop);
+            exit_if(conn == NULL, "new tcp_conn");
         }
         else
         {
