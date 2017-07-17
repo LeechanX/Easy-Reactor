@@ -66,7 +66,7 @@ void event_loop::process_evs()
                 }
                 else
                 {
-                    error_if(1, "fd %d get error, delete it from epoll", _fired_evs[i].data.fd);
+                    error_log("fd %d get error, delete it from epoll", _fired_evs[i].data.fd);
                     del_ioev(_fired_evs[i].data.fd);
                 }
             }
@@ -110,7 +110,7 @@ void event_loop::add_ioev(int fd, io_callback* proc, int mask, void* args)
     event.events = f_mask;
     event.data.fd = fd;
     int ret = ::epoll_ctl(_epfd, op, fd, &event);
-    sys_error_if(ret == -1, "epoll_ctl");
+    error_if(ret == -1, "epoll_ctl");
 }
 
 void event_loop::del_ioev(int fd, int mask)
@@ -126,7 +126,7 @@ void event_loop::del_ioev(int fd, int mask)
     {
         _io_evs.erase(it);
         ret = ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL);
-        sys_error_if(ret == -1, "epoll_ctl EPOLL_CTL_DEL");
+        error_if(ret == -1, "epoll_ctl EPOLL_CTL_DEL");
     }
     else
     {
@@ -134,7 +134,7 @@ void event_loop::del_ioev(int fd, int mask)
         event.events = o_mask;
         event.data.fd = fd;
         ret = ::epoll_ctl(_epfd, EPOLL_CTL_MOD, fd, &event);
-        sys_error_if(ret == -1, "epoll_ctl EPOLL_CTL_MOD");
+        error_if(ret == -1, "epoll_ctl EPOLL_CTL_MOD");
     }
 }
 

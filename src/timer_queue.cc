@@ -34,7 +34,7 @@ void timer_queue::cancel_timer(int timer_id)
     mit it = _position.find(timer_id);
     if (it == _position.end())
     {
-        error_if(1, "no such a timerid %d", timer_id);
+        error_log("no such a timerid %d", timer_id);
         return ;
     }
     int pos = it->second;

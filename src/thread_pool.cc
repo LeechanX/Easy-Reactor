@@ -2,6 +2,7 @@
 #include "tcp_conn.h"
 #include "event_loop.h"
 #include "print_error.h"
+#include "tcp_server.h"
 
 void msg_comming_cb(event_loop* loop, int fd, void *args)
 {
@@ -14,8 +15,16 @@ void msg_comming_cb(event_loop* loop, int fd, void *args)
         msgs.pop();
         if (msg.cmd_type == queue_msg::NEW_CONN)
         {
-            tcp_conn* conn = new tcp_conn(msg.connfd, loop);
-            exit_if(conn == NULL, "new tcp_conn");
+            tcp_conn* conn = tcp_server::conns[msg.connfd];
+            if (conn)
+            {
+                conn->init(msg.connfd, loop);
+            }
+            else
+            {
+                conn = new tcp_conn(msg.connfd, loop);
+                exit_if(conn == NULL, "new tcp_conn");
+            }
         }
         else
         {
@@ -36,7 +45,7 @@ void* thread_domain(void* args)
 
 thread_pool::thread_pool(int thread_cnt): _curr_index(0), _thread_cnt(thread_cnt)
 {
-    exit_if(thread_cnt <= 0, "thread_cnt %d", thread_cnt);
+    exit_if(thread_cnt <= 0 || thread_cnt > 30, "error thread_cnt %d", thread_cnt);
     _pool = new thread_queue*[thread_cnt];
     _tids = new pthread_t[thread_cnt];
     int ret;
@@ -47,7 +56,7 @@ thread_pool::thread_pool(int thread_cnt): _curr_index(0), _thread_cnt(thread_cnt
         exit_if(ret == -1, "pthread_create");
 
         ret = ::pthread_detach(_tids[i]);
-        sys_error_if(ret == -1, "pthread_detach");
+        error_if(ret == -1, "pthread_detach");
     }
 }
 

@@ -75,9 +75,9 @@ private:
 class input_buffer
 {
 public:
-    input_buffer(): _buf(NULL)
-    {
-    }
+    input_buffer(): _buf(NULL) { }
+
+    ~input_buffer() { clear(); }
 
     int read_data(int fd);
 
@@ -87,6 +87,8 @@ public:
 
     void pop(uint32_t len);
 
+    void clear();
+
 private:
     io_buffer* _buf;
 };
@@ -94,10 +96,7 @@ private:
 class output_buffer
 {
 public:
-    ~output_buffer()
-    {
-        revert_all();
-    }
+    ~output_buffer() { clear(); }
 
     void send_data(const char* data, uint32_t datlen);
 
@@ -105,9 +104,8 @@ public:
 
     uint32_t length() const;
 
+    void clear();
 private:
-    void revert_all();
-
     std::list<io_buffer*> _buf_lst;
     typedef std::list<io_buffer*>::iterator buff_it;
     typedef std::list<io_buffer*>::const_iterator cbuff_it;

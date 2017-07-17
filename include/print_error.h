@@ -9,16 +9,15 @@
 #define error_if(condition, fmt, args...) \
     do { \
         if (condition) { \
-            fprintf(stderr, "ERROR:" fmt "\n", ##args); \
+            if (errno) { \
+                fprintf(stderr, "ERROR: %s when " fmt "\n", strerror(errno), ##args); \
+            } else { \
+                fprintf(stderr, "ERROR:" fmt "\n", ##args); \
+            } \
         } \
     } while (0)
 
-#define sys_error_if(condition, fmt, args...) \
-    do { \
-        if (condition) { \
-            fprintf(stderr, "ERROR: %s when " fmt "\n", strerror(errno), ##args); \
-        } \
-    } while (0)
+#define error_log(fmt, args...) error_if(1, fmt, ##args)
 
 inline void exit_if(int condition, const char *fmt, ...)
 {
@@ -38,5 +37,7 @@ inline void exit_if(int condition, const char *fmt, ...)
         exit(EXIT_FAILURE);   
     }
 }
+
+#define exit_log(fmt, args...) exit_if(1, fmt, ##args)
 
 #endif

@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/uio.h>
 #include <sys/ioctl.h>
 #include "io_buffer.h"
@@ -158,7 +159,7 @@ int input_buffer::read_data(int fd)
     uint32_t rn;
     if (::ioctl(fd, FIONREAD, &rn) == -1)
     {
-        sys_error_if(1, "ioctl FIONREAD");
+        error_log("ioctl FIONREAD");
         return -1;
     }
     if (!_buf)
@@ -169,7 +170,7 @@ int input_buffer::read_data(int fd)
         int rd = ::read(fd, _buf->data, rn);
         if (rd == -1)
         {
-            sys_error_if(1, "read");
+            error_log("read tcp socket");
             return -1;
         }
         else
@@ -191,7 +192,7 @@ int input_buffer::read_data(int fd)
             int rd = ::read(fd, _buf->data + _buf->length, rn);
             if (rd == -1)
             {
-                sys_error_if(1, "read");
+                error_log("read tcp socket");
                 return -1;
             }
             else
@@ -214,7 +215,7 @@ int input_buffer::read_data(int fd)
             int rd = ::read(fd, _buf->data + _buf->length, rn);
             if (rd == -1)
             {
-                sys_error_if(1, "read");
+                error_log("read tcp socket");
                 return -1;
             }
             else
@@ -245,6 +246,14 @@ void input_buffer::pop(uint32_t len)
     }
 }
 
+void input_buffer::clear()
+{
+    if (_buf)
+    {
+        buffer_pool::ins()->revert(_buf);
+        _buf = NULL;
+    }
+}
 
 void output_buffer::send_data(const char* data, uint32_t datlen)
 {
@@ -352,9 +361,9 @@ int output_buffer::write_fd(int fd)
     int iov_cnt = 0;
     if (_buf_lst.size() > 100)
     {
-        revert_all();
-        error_if(1, "output too large");
-        return -1;
+        clear();
+        error_log("output too large");
+        return -2;
     }
     for (buff_it it = _buf_lst.begin();it != _buf_lst.end(); ++it)
     {
@@ -380,10 +389,16 @@ int output_buffer::write_fd(int fd)
             break;
         }
     }
+    //impossible code
+    if (wr == -1 && errno == EAGAIN)
+    {
+        error_log("shouldn't meet EAGAIN");
+        wr = -3;
+    }
     return wr;
 }
 
-void output_buffer::revert_all()
+void output_buffer::clear()
 {
     while (!_buf_lst.empty())
     {

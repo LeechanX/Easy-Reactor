@@ -23,7 +23,7 @@ void thread_queue::send_msg(const queue_msg& item)
     ::pthread_mutex_lock(&_mutex);
     _queue.push(item);
     int ret = ::write(_evfd, &number, sizeof(unsigned long long));
-    sys_error_if(ret == -1, "eventfd write");
+    error_if(ret == -1, "eventfd write");
     ::pthread_mutex_unlock(&_mutex);
 }
 
@@ -32,7 +32,7 @@ void thread_queue::recv_msg(std::queue<queue_msg>& tmp_queue)
     unsigned long long number;
     ::pthread_mutex_lock(&_mutex);
     int ret = ::read(_evfd, &number, sizeof(unsigned long long));
-    sys_error_if(ret == -1, "eventfd read");
+    error_if(ret == -1, "eventfd read");
     std::swap(tmp_queue, _queue);
     ::pthread_mutex_unlock(&_mutex);
 }

@@ -8,7 +8,9 @@
 class tcp_conn: public net_commu
 {
 public:
-    tcp_conn(int connfd, event_loop* loop);
+    tcp_conn(int connfd, event_loop* loop) { init(connfd, loop); }
+
+    void init(int connfd, event_loop* loop);
 
     void handle_read();
 
@@ -16,6 +18,7 @@ public:
 
     virtual void send_data(const char* data, uint32_t datlen);
 
+    void clean_conn();
 private:
     int _connfd;
     event_loop* _loop;

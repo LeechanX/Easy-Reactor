@@ -1,9 +1,12 @@
 #include "tcp_server.h"
 #include "tcp_conn.h"
 #include "print_error.h"
+#include "config_reader.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,13 +17,19 @@ void accepter_cb(event_loop* loop, int fd, void *args)
     server->do_accept();
 }
 
-tcp_server::tcp_server(const char* ip, uint16_t port)
+tcp_conn** tcp_server::conns = NULL;
+
+int tcp_server::_curr_conns = 0;
+
+pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
 {
     _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
     exit_if(_sockfd == -1, "socket()");
 
     _reservfd = ::open("/tmp/reactor_accepter", O_CREAT | O_RDONLY | O_CLOEXEC, 0666);
-    sys_error_if(_reservfd == -1, "open()");
+    error_if(_reservfd == -1, "open()");
 
     struct sockaddr_in servaddr;
     servaddr.sin_family = AF_INET;
@@ -43,8 +52,28 @@ tcp_server::tcp_server(const char* ip, uint16_t port)
     //add accepter event
     _loop->add_ioev(_sockfd, accepter_cb, EPOLLIN | EPOLLET);
 
+    //load configure
+    config_reader::setPath(conf_path);
+
     //if mode is multi-thread reactor, create thread pool
+    int thread_cnt = config_reader::ins()->GetNumber("reactor", "threadNum", 0);
     _thd_pool = NULL;
+    if (thread_cnt)
+    {
+        _thd_pool = new thread_pool(thread_cnt);
+        exit_if(_thd_pool == NULL, "new thread_pool");
+    }
+
+    //create connection pool
+    _max_conns = config_reader::ins()->GetNumber("reactor", "maxConns", 10000);
+    int next_fd = ::dup(1);
+    _conns_size = _max_conns + next_fd;
+    ::close(next_fd);
+
+    conns = new tcp_conn*[_conns_size];
+    exit_if(conns == NULL, "new conns[%d]", _conns_size);
+    for (int i = 0;i < _max_conns + next_fd; ++i)
+        conns[i] = NULL;
 }
 
 tcp_server::~tcp_server()
@@ -78,31 +107,51 @@ void tcp_server::do_accept()
             }
             else
             {
-                exit_if(1, "accept()");
+                exit_log("accept()");
             }
         }
         else if (conn_full)
         {
             ::close(connfd);
             _reservfd = ::open("/tmp/reactor_accepter", O_CREAT | O_RDONLY | O_CLOEXEC, 0666);
-            sys_error_if(_reservfd == -1, "open()");
+            error_if(_reservfd == -1, "open()");
         }
         else
         {
-            //connfd
-            //multi-thread reactor model: round-robin a event loop and give message to it
-            if (_thd_pool)
+            //connfd and max connections
+            int curr_conns;
+            get_conn_num(curr_conns);
+            if (curr_conns == _max_conns)
             {
-                thread_queue* cq = _thd_pool->get_next_thread();
-                queue_msg msg;
-                msg.cmd_type = queue_msg::NEW_CONN;
-                msg.connfd = connfd;
-                cq->send_msg(msg);
+                error_log("connection exceeds the maximum connection count %d", _max_conns);
+                ::close(connfd);
             }
-            else//register in self thread
+            else
             {
-                tcp_conn* conn = new tcp_conn(connfd, _loop);
-                exit_if(conn == NULL, "new tcp_conn");
+                assert(connfd < _conns_size);
+                //multi-thread reactor model: round-robin a event loop and give message to it
+                if (_thd_pool)
+                {
+                    thread_queue* cq = _thd_pool->get_next_thread();
+                    queue_msg msg;
+                    msg.cmd_type = queue_msg::NEW_CONN;
+                    msg.connfd = connfd;
+                    cq->send_msg(msg);
+                }
+                else//register in self thread
+                {
+                    tcp_conn* conn = conns[connfd];
+                    if (conn)
+                    {
+                        conn->init(connfd, _loop);
+                    }
+                    else
+                    {
+                        conn = new tcp_conn(connfd, _loop);
+                        exit_if(conn == NULL, "new tcp_conn");
+                        conns[connfd] = conn;
+                    }
+                }
             }
         }
     }
@@ -111,4 +160,25 @@ void tcp_server::do_accept()
 void tcp_server::domain()
 {
     _loop->process_evs();
+}
+
+void tcp_server::inc_conn()
+{
+    ::pthread_mutex_lock(&_mutex);
+    _curr_conns++;
+    ::pthread_mutex_unlock(&_mutex);
+}
+
+void tcp_server::get_conn_num(int& cnt)
+{
+    ::pthread_mutex_lock(&_mutex);
+    cnt = _curr_conns;
+    ::pthread_mutex_unlock(&_mutex);
+}
+
+void tcp_server::dec_conn()
+{
+    ::pthread_mutex_lock(&_mutex);
+    _curr_conns--;
+    ::pthread_mutex_unlock(&_mutex);
 }
