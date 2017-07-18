@@ -26,9 +26,6 @@ struct io_buffer
 class buffer_pool
 {
 public:
-    typedef __gnu_cxx::hash_map<uint32_t, io_buffer*> pool_t;
-    typedef __gnu_cxx::hash_map<uint32_t, int> allocnt_t;
-
     enum MEM_CAP
     {
         u1K   = 1024,
@@ -65,8 +62,9 @@ private:
     buffer_pool(const buffer_pool&);
     const buffer_pool& operator=(const buffer_pool&);
 
+    typedef __gnu_cxx::hash_map<uint32_t, io_buffer*> pool_t;
     pool_t _pool;
-    allocnt_t _allocnt;
+    uint64_t _extra_mem;
     static buffer_pool* _ins;
     static pthread_mutex_t _mutex;
     static pthread_once_t _once;

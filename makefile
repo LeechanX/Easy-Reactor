@@ -1,6 +1,6 @@
 TARGET=lib/libeasy_reactor.a
 CXX=g++
-CFLAGS=-g -O2 -Wall -fPIC
+CFLAGS=-g -O2 -Wall -fPIC -Wno-deprecated
 
 SRC=src
 
@@ -21,7 +21,7 @@ $(TARGET): $(OBJS)
 	@sed -e 's|.*:|$*.o:|' < $*.d.tmp > $*.d
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	rm -f $*.d.tmp
+	@rm -f $*.d.tmp
 
 .PHONY: clean
 

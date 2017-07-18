@@ -7,6 +7,8 @@
 #include "io_buffer.h"
 #include "print_error.h"
 
+#define EXTRA_MEM_LIMIT (2UL * 1024 * 1024 * 1024)
+
 io_buffer* buffer_pool::alloc(uint32_t N)
 {
     uint32_t index;
@@ -30,13 +32,13 @@ io_buffer* buffer_pool::alloc(uint32_t N)
     ::pthread_mutex_lock(&_mutex);
     if (!_pool[index])
     {
-        if (_allocnt[index] * index >= u100M)
+        if (_extra_mem >= EXTRA_MEM_LIMIT)
         {
-            //TODO: limit memory
+            exit_log("use too many memory");
             ::exit(1);
         }
-        _allocnt[index] += 1;
         _pool[index] = new io_buffer(index);
+        _extra_mem += index;
     }
     io_buffer* target = _pool[index];
     _pool[index] = target->next;
@@ -61,7 +63,7 @@ void buffer_pool::revert(io_buffer* buffer)
     ::pthread_mutex_unlock(&_mutex);
 }
 
-buffer_pool::buffer_pool()
+buffer_pool::buffer_pool(): _extra_mem(0)
 {
     io_buffer* prev;
 
