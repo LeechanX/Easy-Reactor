@@ -42,10 +42,10 @@ void tcp_conn::handle_read()
         clean_conn();
         return ;
     }
-    msg_head header;
-    while (ibuf.length() >= MSG_HEAD_LENGTH)
+    req_head header;
+    while (ibuf.length() >= REQ_HEAD_LENGTH)
     {
-        ::memcpy(&header, ibuf.data(), MSG_HEAD_LENGTH);
+        ::memcpy(&header, ibuf.data(), REQ_HEAD_LENGTH);
         if (header.length > MSG_LENGTH_LIMIT || header.length < 0)
         {
             //data format is messed up
@@ -53,7 +53,7 @@ void tcp_conn::handle_read()
             clean_conn();
             break;
         }
-        if (ibuf.length() < MSG_HEAD_LENGTH + header.length)
+        if (ibuf.length() < REQ_HEAD_LENGTH + header.length)
         {
             //this is half-package
             break;
@@ -67,7 +67,7 @@ void tcp_conn::handle_read()
             clean_conn();
             break;
         }
-        ibuf.pop(MSG_HEAD_LENGTH);
+        ibuf.pop(REQ_HEAD_LENGTH);
         //domain: call user callback
         cb(ibuf.data(), header.length, this);
         ibuf.pop(header.length);
@@ -97,6 +97,11 @@ void tcp_conn::send_data(const char* data, uint32_t datlen)
     bool need_listen = false;
     if (!obuf.length())
         need_listen = true;
+    //write rsp head first
+    rsp_head head;
+    head.length = datlen;
+    obuf.send_data((const char*)&head, RSP_HEAD_LENGTH);
+    //write content
     obuf.send_data(data, datlen);
     if (need_listen)
     {

@@ -1,4 +1,4 @@
-TARGET=lib/libeasy_reactor.a
+TARGET=lib/libereactor.a
 CXX=g++
 CFLAGS=-g -O2 -Wall -fPIC -Wno-deprecated
 
@@ -9,7 +9,6 @@ OBJS = $(addsuffix .o, $(basename $(wildcard $(SRC)/*.cc)))
 
 $(TARGET): $(OBJS)
 	mkdir -p lib
-	echo $(OBJS)
 	ar cqs $@ $^
 
 -include $(OBJS:.o=.d)

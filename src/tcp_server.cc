@@ -18,9 +18,9 @@ void accepter_cb(event_loop* loop, int fd, void *args)
 }
 
 tcp_conn** tcp_server::conns = NULL;
-
+int tcp_server::_conns_size = 0;
+int tcp_server::_max_conns = 0;
 int tcp_server::_curr_conns = 0;
-
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
@@ -49,9 +49,6 @@ tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
 
     _addrlen = sizeof (struct sockaddr_in);
 
-    //add accepter event
-    _loop->add_ioev(_sockfd, accepter_cb, EPOLLIN | EPOLLET);
-
     //load configure
     config_reader::setPath(conf_path);
 
@@ -74,6 +71,9 @@ tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
     exit_if(conns == NULL, "new conns[%d]", _conns_size);
     for (int i = 0;i < _max_conns + next_fd; ++i)
         conns[i] = NULL;
+
+    //add accepter event
+    _loop->add_ioev(_sockfd, accepter_cb, EPOLLIN | EPOLLET, this);
 }
 
 tcp_server::~tcp_server()

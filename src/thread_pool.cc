@@ -64,8 +64,9 @@ thread_pool::~thread_pool()
 {
     for (int i = 0;i < _thread_cnt; ++i)
     {
-        //how to kill thread?
-        delete _pool[i];//will let other thread coredump
+        //TODO: how to kill thread?
+        //will let other thread coredump
+        delete _pool[i];//problem
     }
     delete[] _pool;
     delete[] _tids;
