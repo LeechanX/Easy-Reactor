@@ -53,6 +53,7 @@ void buffer_pool::revert(io_buffer* buffer)
 {
     int index = buffer->capacity;
     buffer->length = 0;
+    buffer->head = 0;
 
     ::pthread_mutex_lock(&_mutex);
 
@@ -175,8 +176,14 @@ int input_buffer::read_data(int fd)
             error_log("read tcp socket");
             return -1;
         }
+        else if (rd == 0)
+        {
+            //The peer is closed, return -2
+            return -2;
+        }
         else
         {
+            assert(rn == (uint32_t)rd);
             //must read out rn bytes
             _buf->length = rn;
         }
@@ -197,8 +204,14 @@ int input_buffer::read_data(int fd)
                 error_log("read tcp socket");
                 return -1;
             }
+            else if (rd == 0)
+            {
+                //The peer is closed, return -2
+                return -2;
+            }
             else
             {
+                assert((uint32_t)rd == rn);
                 //must read out rn bytes
                 _buf->length += rn;
             }
@@ -219,6 +232,11 @@ int input_buffer::read_data(int fd)
             {
                 error_log("read tcp socket");
                 return -1;
+            }
+            else if (rd == 0)
+            {
+                //The peer is closed, return -2
+                return -2;
             }
             else
             {

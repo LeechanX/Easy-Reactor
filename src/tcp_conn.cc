@@ -35,10 +35,16 @@ void tcp_conn::init(int connfd, event_loop* loop)
 void tcp_conn::handle_read()
 {
     int ret = ibuf.read_data(_connfd);
-    if (ret != 0)
+    if (ret == -1)
     {
         //read data error
         error_log("read data from socket");
+        clean_conn();
+        return ;
+    }
+    else if (ret == -2)
+    {
+        //The peer is closed, return -2
         clean_conn();
         return ;
     }
@@ -49,7 +55,7 @@ void tcp_conn::handle_read()
         if (header.length > MSG_LENGTH_LIMIT || header.length < 0)
         {
             //data format is messed up
-            error_log("data format error, close connection");
+            error_log("data format error in data head, close connection");
             clean_conn();
             break;
         }
@@ -63,7 +69,7 @@ void tcp_conn::handle_read()
         if (!cb)
         {
             //data format is messed up
-            error_log("data format error, close connection");
+            error_log("this message has no corresponding callback, close connection");
             clean_conn();
             break;
         }
@@ -81,7 +87,7 @@ void tcp_conn::handle_write()
         int ret = obuf.write_fd(_connfd);
         if (ret == -1)
         {
-            error_log("data format error, close connection");
+            error_log("write TCP buffer error, close connection");
             clean_conn();
             return ;
         }

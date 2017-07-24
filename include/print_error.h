@@ -10,7 +10,7 @@
     do { \
         if (condition) { \
             if (errno) { \
-                fprintf(stderr, "ERROR: %s when " fmt "\n", strerror(errno), ##args); \
+                fprintf(stderr, "ERROR: %s " fmt "\n", strerror(errno), ##args); \
             } else { \
                 fprintf(stderr, "ERROR:" fmt "\n", ##args); \
             } \
