@@ -35,8 +35,11 @@ tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
     servaddr.sin_family = AF_INET;
     int ret = ::inet_aton(ip, &servaddr.sin_addr);
     exit_if(ret == 0, "ip format %s", ip);
-
     servaddr.sin_port = htons(port);
+
+    int open_rus = 1;
+    ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &open_rus, sizeof(open_rus));
+    error_if(ret < 0, "setsockopt SO_REUSEADDR");
 
     ret = ::bind(_sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
     exit_if(ret == -1, "bind()");
