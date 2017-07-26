@@ -18,7 +18,7 @@ void buz(const char* data, uint32_t len, net_commu* commu)
 
 int main()
 {
-    tcp_server server("127.0.0.1", 12315, "myconf.conf");
+    tcp_server server("127.0.0.1", 12315, "myconf.ini");
     dispatcher::ins()->add_msg_cb(1, buz);
     server.domain();
     return 0;

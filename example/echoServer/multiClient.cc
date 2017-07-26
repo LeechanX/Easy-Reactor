@@ -1,9 +1,12 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+#include <time.h>
 #include "echoMsg.pb.h"
 #include "easy_reactor.h"
 
@@ -75,9 +78,12 @@ int decode_msg(int sockfd, EchoString& rsp)
     return 0;
 }
 
-int main()
+void* domain(void* args)
 {
+    int succ = 0;
     int sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    long lstTs = time(NULL);
 
     struct sockaddr_in servaddr;
     servaddr.sin_family = AF_INET;
@@ -86,14 +92,33 @@ int main()
 
     ::connect(sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
     EchoString rsp;
-    int i = 0;
-    while (i++ < 10)
+    while (true)
     {
         send_msg(sockfd, "i am leechanx");
         if (decode_msg(sockfd, rsp) == 0)
         {
-            printf("content = %s\n", rsp.content().c_str());
+            ++succ;
+        }
+        long currentTs = time(NULL);
+        if (currentTs > lstTs)
+        {
+            printf("success communicate %d\n", succ);
+            succ = 0;
+            lstTs = currentTs;
         }
     }
     ::close(sockfd);
+    return NULL;
+}
+
+int main(int argc, char** argv)
+{
+    int threadNum = atoi(argv[1]);
+    pthread_t *tids;
+    tids = new pthread_t[threadNum];
+    for (int i = 0;i < threadNum; ++i)
+        pthread_create(&tids[i], NULL, domain, NULL);
+    for (int i = 0;i < threadNum; ++i)
+        pthread_join(tids[i], NULL);
+    return 0;
 }
