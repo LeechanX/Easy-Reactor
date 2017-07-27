@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <signal.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -25,6 +26,17 @@ pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
 {
+    //ignore SIGHUP and SIGPIPE
+    if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
+    {
+        error_log("signal ignore SIGHUP");
+    }
+    if (::signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    {
+        error_log("signal ignore SIGPIPE");
+    }
+
+    //create socket
     _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
     exit_if(_sockfd == -1, "socket()");
 
