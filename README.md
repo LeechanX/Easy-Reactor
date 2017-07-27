@@ -1,10 +1,10 @@
-## Easy Reactor
+# Easy Reactor
 
-#### TCP服务器架构：多线程Reactor
+### TCP服务器架构：多线程Reactor
 
 ![Multi-Thread-Arch](pictures/multi-thread-arch.png)
 
-#### Timer Queue设计
+### Timer Queue设计
 
 - 以最小堆管理Timers（注册Timer、删除Timer），以每个Timer的发生时间在最小堆中排序
 - 以timerfd作为通知方式，交给eventLoop监听，将超时事件转为IO事件
