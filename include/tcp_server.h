@@ -21,6 +21,8 @@ public:
     static void get_conn_num(int& cnt);
     static void dec_conn();
 
+    event_loop* loop() { return _loop; }
+
 private:
     int _sockfd;
     int _reservfd;

@@ -29,7 +29,7 @@ int timer_queue::add_timer(timer_event& te)
     return te.timer_id;
 }
 
-void timer_queue::cancel_timer(int timer_id)
+void timer_queue::del_timer(int timer_id)
 {
     mit it = _position.find(timer_id);
     if (it == _position.end())
@@ -52,7 +52,7 @@ void timer_queue::cancel_timer(int timer_id)
     }
 }
 
-void timer_queue::get_timo_ev(std::vector<timer_event>& fired_evs)
+void timer_queue::get_timo(std::vector<timer_event>& fired_evs)
 {
     std::vector<timer_event> _reuse_lst;
     while (_count != 0 && _pioneer == _event_lst[0].ts)
@@ -91,7 +91,7 @@ void timer_queue::reset_timo()
     if (_pioneer != (uint64_t)-1)
     {
         new_ts.it_value.tv_sec = _pioneer / 1000;
-        new_ts.it_value.tv_nsec = (_pioneer % 1000) * 1000;
+        new_ts.it_value.tv_nsec = (_pioneer % 1000) * 1000000;
     }
     //when _pioneer = -1, new_ts = 0 will disarms the timer
     ::timerfd_settime(_timerfd, TFD_TIMER_ABSTIME, &new_ts, &old_ts);

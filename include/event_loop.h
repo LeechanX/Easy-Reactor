@@ -25,7 +25,7 @@ public:
     int run_at(timer_callback cb, void* args, uint64_t ts);
     int run_after(timer_callback cb, void* args, int sec, int millis = 0);
     int run_every(timer_callback cb, void* args, int sec, int millis = 0);
-    void cancel_timer(int timer_id);
+    void del_timer(int timer_id);
 
 private:
     int _epfd;

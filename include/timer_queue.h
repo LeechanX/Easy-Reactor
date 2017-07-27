@@ -14,11 +14,12 @@ public:
 
     int add_timer(timer_event& te);
 
-    void cancel_timer(int timer_id);
+    void del_timer(int timer_id);
 
     int notifier() const { return _timerfd; }
+    int size() const { return _count; }
 
-    void get_timo_ev(std::vector<timer_event>& fired_evs); 
+    void get_timo(std::vector<timer_event>& fired_evs);
 private:
     void reset_timo();
 

@@ -11,7 +11,7 @@
 void timerqueue_cb(event_loop* loop, int fd, void *args)
 {
     std::vector<timer_event> fired_evs;
-    loop->_timer_que->get_timo_ev(fired_evs);
+    loop->_timer_que->get_timo(fired_evs);
     for (std::vector<timer_event>::iterator it = fired_evs.begin();
         it != fired_evs.end(); ++it)
     {
@@ -170,7 +170,7 @@ int event_loop::run_every(timer_callback cb, void* args, int sec, int millis)
     return _timer_que->add_timer(te);
 }
 
-void event_loop::cancel_timer(int timer_id)
+void event_loop::del_timer(int timer_id)
 {
-    _timer_que->cancel_timer(timer_id);
+    _timer_que->del_timer(timer_id);
 }
