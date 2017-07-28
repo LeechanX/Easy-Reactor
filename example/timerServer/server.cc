@@ -18,11 +18,15 @@ void buz2(event_loop* loop, void* usr_data)
 
 int main()
 {
-    tcp_server server("127.0.0.1", 12315, "myconf.ini");
+    event_loop loop;
+    tcp_server server(&loop, "127.0.0.1", 12315, "myconf.ini");
+
     FILE* fp = fopen("output.log", "w");
-    server.loop()->run_after(buz1, fp, 10);
-    server.loop()->run_every(buz2, fp, 1, 500);
-    server.domain();
+    loop.run_after(buz1, fp, 10);
+    loop.run_every(buz2, fp, 1, 500);
+
+    loop.process_evs();
+
     fclose(fp);
     return 0;
 }

@@ -16,7 +16,7 @@ using namespace echo;
 int send_msg(int sockfd, const char* content)
 {
     static int id = 0;
-    req_head head;
+    commu_head head;
     head.cmdid = 1;
 
     EchoString req;
@@ -27,9 +27,9 @@ int send_msg(int sockfd, const char* content)
 
     head.length = str.size();
     char wbuf[1024] = {};
-    ::memcpy(wbuf, &head, REQ_HEAD_LENGTH);
-    ::memcpy(wbuf + REQ_HEAD_LENGTH, str.c_str(), str.size());
-    int wl = REQ_HEAD_LENGTH + str.size();
+    ::memcpy(wbuf, &head, COMMU_HEAD_LENGTH);
+    ::memcpy(wbuf + COMMU_HEAD_LENGTH, str.c_str(), str.size());
+    int wl = COMMU_HEAD_LENGTH + str.size();
 
     int ret = ::write(sockfd, wbuf, wl);
     if (ret != wl)
@@ -40,11 +40,11 @@ int send_msg(int sockfd, const char* content)
 int decode_msg(int sockfd, EchoString& rsp)
 {
     char rbuf[1024];
-    rsp_head head;
-    int rn = ::read(sockfd, &head, RSP_HEAD_LENGTH);
-    if (rn > 0 && rn != RSP_HEAD_LENGTH)
+    commu_head head;
+    int rn = ::read(sockfd, &head, COMMU_HEAD_LENGTH);
+    if (rn > 0 && rn != COMMU_HEAD_LENGTH)
     {
-        printf("read head get length != RSP_HEAD_LENGTH\n");
+        printf("read head get length != COMMU_HEAD_LENGTH\n");
         return -1;
     }
     else if (rn == 0)
@@ -61,7 +61,7 @@ int decode_msg(int sockfd, EchoString& rsp)
     rn = ::read(sockfd, rbuf, length);
     if (rn > 0 && rn != length)
     {
-        perror("read content get length != RSP_HEAD_LENGTH\n");
+        perror("read content get length != COMMU_HEAD_LENGTH\n");
         return -1;
     }
     else if (rn == 0)

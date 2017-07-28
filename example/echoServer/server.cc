@@ -5,7 +5,7 @@
 using namespace std;
 using namespace echo;
 
-void buz(const char* data, uint32_t len, net_commu* commu)
+void buz(const char* data, uint32_t len, int cmdid, net_commu* commu)
 {
     EchoString req, rsp;
     req.ParseFromArray(data, len);
@@ -13,13 +13,16 @@ void buz(const char* data, uint32_t len, net_commu* commu)
     rsp.set_content(req.content());
     string rspStr;
     rsp.SerializeToString(&rspStr);
-    commu->send_data(rspStr.c_str(), rspStr.size());
+    commu->send_data(rspStr.c_str(), rspStr.size(), cmdid);
 }
 
 int main()
 {
-    tcp_server server("127.0.0.1", 12315, "myconf.ini");
+    event_loop loop;
+    tcp_server server(&loop, "127.0.0.1", 12315, "myconf.ini");
     dispatcher::ins()->add_msg_cb(1, buz);
-    server.domain();
+
+    loop.process_evs();
+
     return 0;
 }

@@ -5,18 +5,12 @@
 
 #define MSG_LENGTH_LIMIT 65536
 
-struct req_head
+struct commu_head
 {
     int cmdid;
     uint32_t length;
 };
 
-struct rsp_head
-{
-    uint32_t length;
-};
-
-#define REQ_HEAD_LENGTH sizeof (req_head)
-#define RSP_HEAD_LENGTH sizeof (rsp_head)
+#define COMMU_HEAD_LENGTH sizeof (commu_head)
 
 #endif

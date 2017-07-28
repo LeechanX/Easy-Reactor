@@ -24,7 +24,7 @@ int tcp_server::_max_conns = 0;
 int tcp_server::_curr_conns = 0;
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
+tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path)
 {
     //ignore SIGHUP and SIGPIPE
     if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
@@ -59,11 +59,9 @@ tcp_server::tcp_server(const char* ip, uint16_t port, const char* conf_path)
     ret = ::listen(_sockfd, 500);
     exit_if(ret == -1, "listen()");
 
-    _loop = new event_loop();
-    exit_if(_loop == NULL, "new event_loop");
+    _loop = loop;
 
     _addrlen = sizeof (struct sockaddr_in);
-
     //load configure
     config_reader::setPath(conf_path);
 
@@ -170,11 +168,6 @@ void tcp_server::do_accept()
             }
         }
     }
-}
-
-void tcp_server::domain()
-{
-    _loop->process_evs();
 }
 
 void tcp_server::inc_conn()

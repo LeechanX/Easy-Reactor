@@ -5,7 +5,7 @@
 #include <ext/hash_map>
 #include "net_commu.h"
 
-typedef void msg_callback(const char* data, uint32_t len, net_commu* commu);
+typedef void msg_callback(const char* data, uint32_t len, int cmdid, net_commu* commu);
 
 class dispatcher
 {

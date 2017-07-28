@@ -6,7 +6,7 @@
 class net_commu
 {
 public:
-    virtual void send_data(const char* data, uint32_t datalen) = 0;
+    virtual void send_data(const char* data, uint32_t datalen, int cmdid) = 0;
 };
 
 #endif

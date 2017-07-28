@@ -16,7 +16,7 @@ public:
 
     void handle_write();
 
-    virtual void send_data(const char* data, uint32_t datlen);
+    virtual void send_data(const char* data, uint32_t datlen, int cmdid);
 
     void clean_conn();
 private:
