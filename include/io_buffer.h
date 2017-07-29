@@ -16,6 +16,11 @@ struct io_buffer
         assert(data);
     }
 
+    void clear()
+    {
+        length = head = 0;
+    }
+
     uint32_t capacity;
     uint32_t length;
     uint32_t head;
