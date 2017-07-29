@@ -4,6 +4,7 @@
 #include "event_loop.h"
 #include "thread_pool.h"
 #include "tcp_conn.h"
+#include "msg_dispatcher.h"
 #include <netinet/in.h>
 
 class tcp_server
@@ -14,6 +15,8 @@ public:
     ~tcp_server();
 
     void do_accept();
+
+    void add_msg_cb(int cmdid, msg_callback* msg_cb) { dispatcher.add_msg_cb(cmdid, msg_cb); }
 
     static void inc_conn();
     static void get_conn_num(int& cnt);
@@ -34,6 +37,7 @@ private:
     static int _curr_conns;
     static pthread_mutex_t _mutex;
 public:
+    static msg_dispatcher dispatcher;
     static tcp_conn** conns;
 };
 

@@ -1,5 +1,5 @@
-#ifndef __DISPATCHER_H__
-#define __DISPATCHER_H__
+#ifndef __MSG_DISPATCHER_H__
+#define __MSG_DISPATCHER_H__
 
 #include <pthread.h>
 #include <ext/hash_map>
@@ -7,14 +7,17 @@
 
 typedef void msg_callback(const char* data, uint32_t len, int cmdid, net_commu* commu);
 
-class dispatcher
+class msg_dispatcher
 {
 public:
-    static void init();
+    msg_dispatcher() {}
 
-    static dispatcher* ins();
-
-    int add_msg_cb(int cmdid, msg_callback* msg_cb);
+    int add_msg_cb(int cmdid, msg_callback* msg_cb)
+    {
+        if (_dispatcher.find(cmdid) != _dispatcher.end()) return -1;
+        _dispatcher[cmdid] = msg_cb;
+        return 0;
+    }
 
     bool exist(int cmdid) const { return _dispatcher.find(cmdid) != _dispatcher.end(); }
 
@@ -24,15 +27,8 @@ public:
     }
 
 private:
-    dispatcher() {}
-
-    dispatcher(const dispatcher& other);
-    const dispatcher& operator=(const dispatcher& other);
-
     __gnu_cxx::hash_map<int, msg_callback*> _dispatcher;
     typedef __gnu_cxx::hash_map<int, msg_callback*>::iterator chm_it;
-    static dispatcher* _ins;
-    static pthread_once_t _once;
 };
 
 #endif

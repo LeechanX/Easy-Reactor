@@ -1,6 +1,5 @@
 #include "tcp_conn.h"
 #include "msg_head.h"
-#include "dispatcher.h"
 #include "tcp_server.h"
 #include "print_error.h"
 #include <fcntl.h>
@@ -65,7 +64,7 @@ void tcp_conn::handle_read()
             break;
         }
         //find in dispatcher
-        msg_callback* cb = dispatcher::ins()->cb(header.cmdid);
+        msg_callback* cb = tcp_server::dispatcher.cb(header.cmdid);
         if (!cb)
         {
             //data format is messed up
@@ -98,7 +97,7 @@ void tcp_conn::handle_write()
     }
 }
 
-void tcp_conn::send_data(const char* data, uint32_t datlen, int cmdid)
+int tcp_conn::send_data(const char* data, uint32_t datlen, int cmdid)
 {
     bool need_listen = false;
     if (!obuf.length())
@@ -114,6 +113,7 @@ void tcp_conn::send_data(const char* data, uint32_t datlen, int cmdid)
     {
         _loop->add_ioev(_connfd, tcp_wcb, EPOLLOUT, this);
     }
+    return 0;
 }
 
 void tcp_conn::clean_conn()

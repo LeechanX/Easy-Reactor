@@ -1,21 +1,29 @@
-#ifndef __TCP_CLIENT_H__
-#define __TCP_CLIENT_H__
-
 #include <errno.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <stdint.h>
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#include "msg_head.h"
+#include "tcp_client.h"
 #include "print_error.h"
-#include "event_loop.h"
 
-class tcp_client;
+static void read_cb(event_loop* loop, int fd, void* args)
+{
+    tcp_client* cli = (tcp_client*)args;
+    cli->handle_read();
+}
+
+static void write_cb(event_loop* loop, int fd, void* args)
+{
+    tcp_client* cli = (tcp_client*)args;
+    cli->handle_write();
+}
 
 static void reconn_cb(event_loop* loop, void* usr_data)
 {
@@ -34,8 +42,8 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     {
         //connect build success!
         error_log("connection OK!");//debug
-        net_ok = true;
-        loop->add_ioev(fd, cli->rcb, EPOLLIN, cli);
+        cli->net_ok = true;
+        loop->add_ioev(fd, read_cb, EPOLLIN | EPOLLET, cli);
     }
     else
     {
@@ -46,162 +54,195 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     }
 }
 
-static void write_cb(event_loop* loop, int fd, void* args)
-{
-    tcp_client* cli = (tcp_client*)args;
-    
-}
-
-class tcp_client
-{
-public:
-    tcp_client(event_loop* loop, const char* ip, unsigned short port, io_callback* rcb, 
-        io_callback* wcb):
+tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port):
     net_ok(false), 
-    ibuf(262144),
+    ibuf(4194304),
     obuf(4194304),
     _sockfd(-1),
     _loop(loop)
+{
+    //ignore SIGHUP and SIGPIPE
+    if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
     {
-        assert(rcb);
-        assert(wcb);
-        this->rcb = rcb;
-        this->wcb = wcb;
-        //ignore SIGHUP and SIGPIPE
-        if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
-        {
-            error_log("signal ignore SIGHUP");
-        }
-        
-        //construct server address
-        _servaddr.sin_family = AF_INET;
-        int ret = ::inet_aton(ip, &_servaddr.sin_addr);
-        exit_if(ret == 0, "ip format %s", ip);
-        _servaddr.sin_port = htons(port);
-        _addrlen = sizeof _servaddr;
-
-        //connect
-        do_connect();
+        error_log("signal ignore SIGHUP");
     }
 
-    void do_connect()
-    {
-        if (_sockfd != -1)
-            ::close(_sockfd);
-        //create socket
-        _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, IPPROTO_TCP);
-        exit_if(_sockfd == -1, "socket()");
+    //construct server address
+    _servaddr.sin_family = AF_INET;
+    int ret = ::inet_aton(ip, &_servaddr.sin_addr);
+    exit_if(ret == 0, "ip format %s", ip);
+    _servaddr.sin_port = htons(port);
+    _addrlen = sizeof _servaddr;
 
-        ret = ::connect(_sockfd, (const struct sockaddr*)&_servaddr, _addrlen);
-        if (ret == 0)
+    //connect
+    do_connect();
+}
+
+void tcp_client::do_connect()
+{
+    if (_sockfd != -1)
+        ::close(_sockfd);
+    //create socket
+    _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, IPPROTO_TCP);
+    exit_if(_sockfd == -1, "socket()");
+
+    int ret = ::connect(_sockfd, (const struct sockaddr*)&_servaddr, _addrlen);
+    if (ret == 0)
+    {
+        net_ok = true;
+        error_log("connection finish");//debug
+    }
+    else
+    {
+        if (errno == EINPROGRESS)
         {
-            net_ok = true;
-            error_log("connection finish");//debug
+            //add connection event
+            error_log("connection is doing");//debug
+            _loop->add_ioev(_sockfd, connection_cb, EPOLLOUT, this);
         }
         else
         {
-            if (errno == EINPROGRESS)
+            exit_log("connect()");
+        }
+    }
+}
+
+int tcp_client::send_data(const char* data, uint32_t datlen, int cmdid)//call by user
+{
+    bool need = obuf.length? true: false;//if need to add to event loop
+    if (datlen + COMMU_HEAD_LENGTH > obuf.capacity - obuf.length)
+    {
+        error_log("no more space to write socket");
+        return -1;
+    }
+    commu_head head;
+    head.cmdid = cmdid;
+    head.length = datlen;
+    ::memcpy(obuf.data + obuf.length, &head, COMMU_HEAD_LENGTH);
+    obuf.length += COMMU_HEAD_LENGTH;
+    ::memcpy(obuf.data + obuf.length, data, datlen);
+    obuf.length += datlen;
+    if (need)
+    {
+        _loop->add_ioev(_sockfd, write_cb, EPOLLOUT, this);
+    }
+    return 0;
+}
+
+int tcp_client::handle_read()
+{
+    int rn;
+    if (::ioctl(_sockfd, FIONREAD, &rn) == -1)
+    {
+        error_log("ioctl FIONREAD");
+        return -1;
+    }
+    assert((uint32_t)rn <= ibuf.capacity - ibuf.length);
+    while (true)
+    {
+        int r = ::read(_sockfd, ibuf.data + ibuf.length, rn);
+        if (r == -1)
+        {
+            if (errno == EINTR)
             {
-                //add connection event
-                error_log("connection is doing");//debug
-                _loop->add_ioev(_sockfd, connection_cb, EPOLLOUT, this);
+                continue;
             }
             else
             {
-                exit_log("connect()");
+                error_log("read()");
+                clean_conn();
+                return -1;
             }
         }
+        assert(r == rn);
+        ibuf.length += r;
+        break;
     }
-
-    int send_data(const char* data, uint32_t len)//call by user
+    commu_head head;
+    int cmdid, length;
+    while (ibuf.length >= COMMU_HEAD_LENGTH)
     {
-        bool need = obuf.length? true: false;//if need to add to event loop
-        if (len > obuf.capacity - obuf.length)
+        ::memcpy(&head, ibuf.data + ibuf.head, COMMU_HEAD_LENGTH);
+        cmdid = head.cmdid;
+        length = head.length;
+
+        if (length + COMMU_HEAD_LENGTH < ibuf.length)
         {
-            error_log("no more space to write socket");
+            //sub-package
+            break;
+        }
+
+        ibuf.head += COMMU_HEAD_LENGTH;
+        ibuf.length -= COMMU_HEAD_LENGTH;
+
+        msg_callback* cb = _dispatcher.cb(cmdid);
+        if (!cb)
+        {
+            error_log("this message has no corresponding callback, close connection");
+            clean_conn();
             return -1;
         }
-        ::memcpy(obuf.data + obuf.length, data, len);
-        obuf.length += len;
-        if (need)
-        {
-            _loop->add_ioev(_sockfd, write_cb, EPOLLOUT, this);
-        }
-        return 0;
-    }
+        cb(ibuf.data + ibuf.head, length, cmdid, this);
 
-    int handle_read()
-    {
-        bool need = false;
-        
+        ibuf.head += length;
+        ibuf.length -= length;
     }
+    ::memmove(ibuf.data, ibuf.data + ibuf.head, ibuf.length);
+    ibuf.head = 0;
+    return 0;
+}
 
-    int handle_write()
+int tcp_client::handle_write()
+{
+    while (obuf.length)
     {
-        bool need = false;
-        while (obuf.length)
+        int w = ::write(_sockfd, obuf.data + obuf.head, obuf.length);
+        if (w == -1)
         {
-            int w = ::write(_sockfd, obuf.data + obuf.head, obuf.length);
-            if (w == -1)
+            if (errno == EINTR)
             {
-                if (errno == EINTR)
-                {
-                    continue;
-                }
-                else if (errno == EAGAIN)
-                {
-                    break;
-                }
-                else
-                {
-                    clean_conn();
-                    error_log("write()");
-                    return -1;
-                }
+                continue;
+            }
+            else if (errno == EAGAIN)
+            {
+                break;
             }
             else
             {
-                obuf.head += w;
-                obuf.length -= w;
+                error_log("write()");
+                clean_conn();
+                return -1;
             }
         }
-        if (obuf.length)
+        else
         {
-            ::memmove(obuf.data, obuf.data + obuf.head, obuf.length);
-            obuf.head = 0;
+            obuf.head += w;
+            obuf.length -= w;
         }
     }
-
-    ~tcp_client()
+    if (obuf.length)
     {
+        ::memmove(obuf.data, obuf.data + obuf.head, obuf.length);
+        obuf.head = 0;
+    }
+    else
+    {
+        _loop->del_ioev(_sockfd, EPOLLOUT);
+    }
+    return 0;
+}
+
+void tcp_client::clean_conn()
+{
+    if (_sockfd != -1)
+    {
+        _loop->del_ioev(_sockfd);
         ::close(_sockfd);
     }
+    ibuf.clear();
+    obuf.clear();
+    net_ok = false;
 
-    void clean_conn()
-    {
-        if (_sockfd != -1)
-        {
-            _loop->del_ioev(_sockfd);
-            ::close(_sockfd);
-        }
-        ibuf.clear();
-        obuf.clear();
-        net_ok = false;
-
-        //connect
-        do_connect();
-    }
-
-    bool net_ok;
-    io_callback* rcb;
-    io_callback* wcb;
-    io_buffer ibuf, obuf;
-
-private:
-    int _sockfd;
-    event_loop* _loop;
-    struct sockaddr_in _servaddr;
-    socklen_t _addrlen;
-};
-
-#endif
+    //connect
+    do_connect();
+}

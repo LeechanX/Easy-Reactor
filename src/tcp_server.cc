@@ -23,6 +23,7 @@ int tcp_server::_conns_size = 0;
 int tcp_server::_max_conns = 0;
 int tcp_server::_curr_conns = 0;
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
+msg_dispatcher tcp_server::dispatcher;
 
 tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path)
 {

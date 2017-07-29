@@ -20,7 +20,7 @@ int main()
 {
     event_loop loop;
     tcp_server server(&loop, "127.0.0.1", 12315, "myconf.ini");
-    dispatcher::ins()->add_msg_cb(1, buz);
+    server.add_msg_cb(1, buz);
 
     loop.process_evs();
 
