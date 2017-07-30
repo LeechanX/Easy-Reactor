@@ -16,10 +16,8 @@ struct testQPS
 
 void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_data)
 {
-    testQPS* qps = (testQPS*)usr_data;
-
+    testQPS* qps = (testQPS*)usr_data;//获取用户参数
     EchoString req, rsp;
-
     if (rsp.ParseFromArray(data, len))
     {
         qps->succ++;
@@ -37,23 +35,23 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 
     string reqStr;
     req.SerializeToString(&reqStr);
-    commu->send_data(reqStr.c_str(), reqStr.size(), cmdid);
+    commu->send_data(reqStr.c_str(), reqStr.size(), cmdid);//回复消息
 }
 
 void* domain(void* args)
 {
     event_loop loop;
-    tcp_client client(&loop, "127.0.0.1", 12315);
+    tcp_client client(&loop, "127.0.0.1", 12315);//创建TCP客户端
 
     testQPS qps;
-    client.add_msg_cb(1, buz, (void*)&qps);
+    client.add_msg_cb(1, buz, (void*)&qps);//设置：当收到消息id=1的消息时的回调函数
 
     EchoString req;
     req.set_id(100);
-    req.set_content("My name is LeechanX, I miss Helen Liang very much");
+    req.set_content("My name is LeechanX, I miss Helen Liang very much, I don't know when she will come back to me......");
     string reqStr;
     req.SerializeToString(&reqStr);
-    client.send_data(reqStr.c_str(), reqStr.size(), 1);
+    client.send_data(reqStr.c_str(), reqStr.size(), 1);//主动发送消息
 
     loop.process_evs();
     return NULL;
