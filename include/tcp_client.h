@@ -12,7 +12,7 @@ class tcp_client: public net_commu
 public:
     tcp_client(event_loop* loop, const char* ip, unsigned short port);
 
-    void add_msg_cb(int cmdid, msg_callback* msg_cb) { _dispatcher.add_msg_cb(cmdid, msg_cb); }
+    void add_msg_cb(int cmdid, msg_callback* msg_cb, void* usr_data = NULL) { _dispatcher.add_msg_cb(cmdid, msg_cb, usr_data); }
 
     void do_connect();
 

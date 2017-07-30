@@ -41,13 +41,15 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     if (result == 0)
     {
         //connect build success!
-        error_log("connection OK!");//debug
         cli->net_ok = true;
         loop->add_ioev(fd, read_cb, EPOLLIN | EPOLLET, cli);
+        if (cli->obuf.length)
+        {
+            loop->add_ioev(fd, write_cb, EPOLLOUT, cli);
+        }
     }
     else
     {
-        error_log("connection error");//debug
         //connect build error!
         //reconnection after 2s
         loop->run_after(reconn_cb, cli, 2);
@@ -109,7 +111,7 @@ void tcp_client::do_connect()
 
 int tcp_client::send_data(const char* data, uint32_t datlen, int cmdid)//call by user
 {
-    bool need = obuf.length? true: false;//if need to add to event loop
+    bool need = (obuf.length == 0 && net_ok) ? true: false;//if need to add to event loop
     if (datlen + COMMU_HEAD_LENGTH > obuf.capacity - obuf.length)
     {
         error_log("no more space to write socket");
@@ -119,9 +121,11 @@ int tcp_client::send_data(const char* data, uint32_t datlen, int cmdid)//call by
     head.cmdid = cmdid;
     head.length = datlen;
     ::memcpy(obuf.data + obuf.length, &head, COMMU_HEAD_LENGTH);
+
     obuf.length += COMMU_HEAD_LENGTH;
     ::memcpy(obuf.data + obuf.length, data, datlen);
     obuf.length += datlen;
+
     if (need)
     {
         _loop->add_ioev(_sockfd, write_cb, EPOLLOUT, this);
@@ -154,6 +158,13 @@ int tcp_client::handle_read()
                 return -1;
             }
         }
+        else if (r == 0)
+        {
+            //peer close connection
+            error_log("connection closed by peer");
+            clean_conn();
+            return -1;
+        }
         assert(r == rn);
         ibuf.length += r;
         break;
@@ -175,14 +186,13 @@ int tcp_client::handle_read()
         ibuf.head += COMMU_HEAD_LENGTH;
         ibuf.length -= COMMU_HEAD_LENGTH;
 
-        msg_callback* cb = _dispatcher.cb(cmdid);
-        if (!cb)
+        if (!_dispatcher.exist(cmdid))
         {
             error_log("this message has no corresponding callback, close connection");
             clean_conn();
             return -1;
         }
-        cb(ibuf.data + ibuf.head, length, cmdid, this);
+        _dispatcher.cb(ibuf.data + ibuf.head, length, cmdid, this);
 
         ibuf.head += length;
         ibuf.length -= length;
@@ -227,6 +237,7 @@ int tcp_client::handle_write()
     }
     else
     {
+        obuf.head = 0;
         _loop->del_ioev(_sockfd, EPOLLOUT);
     }
     return 0;
@@ -239,8 +250,8 @@ void tcp_client::clean_conn()
         _loop->del_ioev(_sockfd);
         ::close(_sockfd);
     }
-    ibuf.clear();
-    obuf.clear();
+    //ibuf.clear();
+    //obuf.clear();
     net_ok = false;
 
     //connect

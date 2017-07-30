@@ -44,6 +44,7 @@ void tcp_conn::handle_read()
     else if (ret == -2)
     {
         //The peer is closed, return -2
+        error_log("connection closed by peer");
         clean_conn();
         return ;
     }
@@ -64,8 +65,7 @@ void tcp_conn::handle_read()
             break;
         }
         //find in dispatcher
-        msg_callback* cb = tcp_server::dispatcher.cb(header.cmdid);
-        if (!cb)
+        if (!tcp_server::dispatcher.exist(header.cmdid))
         {
             //data format is messed up
             error_log("this message has no corresponding callback, close connection");
@@ -74,7 +74,7 @@ void tcp_conn::handle_read()
         }
         ibuf.pop(COMMU_HEAD_LENGTH);
         //domain: call user callback
-        cb(ibuf.data(), header.length, header.cmdid, this);
+        tcp_server::dispatcher.cb(ibuf.data(), header.length, header.cmdid, this);
         ibuf.pop(header.length);
     }
 }

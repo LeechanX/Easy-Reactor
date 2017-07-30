@@ -16,7 +16,7 @@ public:
 
     void do_accept();
 
-    void add_msg_cb(int cmdid, msg_callback* msg_cb) { dispatcher.add_msg_cb(cmdid, msg_cb); }
+    void add_msg_cb(int cmdid, msg_callback* msg_cb, void* usr_data = NULL) { dispatcher.add_msg_cb(cmdid, msg_cb, usr_data); }
 
     static void inc_conn();
     static void get_conn_num(int& cnt);

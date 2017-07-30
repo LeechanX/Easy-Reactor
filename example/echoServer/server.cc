@@ -5,7 +5,7 @@
 using namespace std;
 using namespace echo;
 
-void buz(const char* data, uint32_t len, int cmdid, net_commu* commu)
+void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_data)
 {
     EchoString req, rsp;
     req.ParseFromArray(data, len);

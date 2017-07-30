@@ -6,7 +6,7 @@ LIB=-L../../lib -lereactor -lrt
 OBJS = $(addsuffix .o, $(basename $(wildcard *.cc)))
 
 all:
-	$(CXX) -o server $(CFLAGS) server.cc $(INC) $(LIB)
+	$(CXX) -o server.prog $(CFLAGS) server.cc $(INC) $(LIB)
 
 clean:
-	-rm -f *.o *.d server
+	-rm -f *.o *.d server.prog
