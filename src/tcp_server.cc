@@ -1,16 +1,18 @@
-#include "tcp_server.h"
-#include "tcp_conn.h"
-#include "print_error.h"
-#include "config_reader.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include <netinet/tcp.h>
+
+#include "tcp_conn.h"
+#include "tcp_server.h"
+#include "print_error.h"
+#include "config_reader.h"
 
 void accepter_cb(event_loop* loop, int fd, void *args)
 {
@@ -50,9 +52,12 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const ch
     exit_if(ret == 0, "ip format %s", ip);
     servaddr.sin_port = htons(port);
 
-    int open_rus = 1;
-    ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &open_rus, sizeof(open_rus));
+    int open_flag = 1;
+    ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &open_flag, sizeof(open_flag));
     error_if(ret < 0, "setsockopt SO_REUSEADDR");
+
+    ret = ::setsockopt(_sockfd, IPPROTO_TCP, TCP_NODELAY, &open_flag, sizeof(open_flag));
+    error_if(ret < 0, "setsockopt TCP_NODELAY");
 
     ret = ::bind(_sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
     exit_if(ret == -1, "bind()");
@@ -95,6 +100,13 @@ tcp_server::~tcp_server()
     ::close(_sockfd);
     ::close(_reservfd);
     delete _loop;
+}
+
+void tcp_server::keep_alive()
+{
+    int open_flag = 1;
+    int ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_KEEPALIVE, &open_flag, sizeof(open_flag));
+    error_if(ret < 0, "setsockopt SO_KEEPALIVE");
 }
 
 void tcp_server::do_accept()
