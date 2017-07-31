@@ -48,7 +48,7 @@ void* domain(void* args)
 
     EchoString req;
     req.set_id(100);
-    req.set_content("My name is LeechanX, I miss Helen Liang very much, I don't know when she will come back to me......");
+    req.set_content("I miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you!");
     string reqStr;
     req.SerializeToString(&reqStr);
     client.send_data(reqStr.c_str(), reqStr.size(), 1);//主动发送消息
