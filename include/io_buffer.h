@@ -1,11 +1,12 @@
 #ifndef __IO_BUFFER_H__
 #define __IO_BUFFER_H__
 
-#include <stdint.h>
-#include <pthread.h>
 #include <list>
-#include <ext/hash_map>
+#include <string.h>
+#include <stdint.h>
 #include <assert.h>
+#include <pthread.h>
+#include <ext/hash_map>
 
 struct io_buffer
 {
@@ -21,6 +22,23 @@ struct io_buffer
         length = head = 0;
     }
 
+    void adjust()//move data to head
+    {
+        if (head != 0)
+        {
+            ::memmove(data, data + head, length);
+            head = 0;
+        }
+    }
+
+    void copy(const io_buffer* other)
+    {
+        //only copy data to myself
+        ::memcpy(data, other->data + other->head, other->length);
+        head = 0;
+        length = other->length;
+    }
+
     uint32_t capacity;
     uint32_t length;
     uint32_t head;
@@ -33,14 +51,13 @@ class buffer_pool
 public:
     enum MEM_CAP
     {
-        u1K   = 1024,
         u4K   = 4096,
         u16K  = 16384,
         u64K  = 65536,
         u256K = 262144,
         u1M   = 1048576,
         u4M   = 4194304,
-        u100M = 104857600
+        u8M   = 8388608
     };
 
     static void init()
@@ -57,7 +74,7 @@ public:
 
     io_buffer* alloc(uint32_t N);
 
-    io_buffer* alloc() { return alloc(u1K); }
+    io_buffer* alloc() { return alloc(u4K); }
 
     void revert(io_buffer* buffer);
 
@@ -69,7 +86,7 @@ private:
 
     typedef __gnu_cxx::hash_map<uint32_t, io_buffer*> pool_t;
     pool_t _pool;
-    uint64_t _extra_mem;
+    uint64_t _total_mem;
     static buffer_pool* _ins;
     static pthread_mutex_t _mutex;
     static pthread_once_t _once;
