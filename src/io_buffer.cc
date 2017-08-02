@@ -272,11 +272,6 @@ void input_buffer::pop(uint32_t len)
         buffer_pool::ins()->revert(_buf);
         _buf = NULL;
     }
-    else
-    {
-        ::memmove(_buf->data, _buf->data + _buf->head, _buf->length);
-        _buf->head = 0;
-    }
 }
 
 void input_buffer::clear()
@@ -430,7 +425,7 @@ void output_buffer::clear()
     {
         io_buffer* buffer = _buf_lst.front();
         buffer_pool::ins()->revert(buffer);
-        _buf_lst.pop_back();
+        _buf_lst.pop_front();
     }
 }
 

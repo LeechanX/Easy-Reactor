@@ -48,24 +48,24 @@ void tcp_conn::handle_read()
         clean_conn();
         return ;
     }
-    commu_head header;
+    commu_head head;
     while (ibuf.length() >= COMMU_HEAD_LENGTH)
     {
-        ::memcpy(&header, ibuf.data(), COMMU_HEAD_LENGTH);
-        if (header.length > MSG_LENGTH_LIMIT || header.length < 0)
+        ::memcpy(&head, ibuf.data(), COMMU_HEAD_LENGTH);
+        if (head.length > MSG_LENGTH_LIMIT || head.length < 0)
         {
             //data format is messed up
             error_log("data format error in data head, close connection");
             clean_conn();
             break;
         }
-        if (ibuf.length() < COMMU_HEAD_LENGTH + header.length)
+        if (ibuf.length() < COMMU_HEAD_LENGTH + head.length)
         {
             //this is half-package
             break;
         }
         //find in dispatcher
-        if (!tcp_server::dispatcher.exist(header.cmdid))
+        if (!tcp_server::dispatcher.exist(head.cmdid))
         {
             //data format is messed up
             error_log("this message has no corresponding callback, close connection");
@@ -74,8 +74,8 @@ void tcp_conn::handle_read()
         }
         ibuf.pop(COMMU_HEAD_LENGTH);
         //domain: call user callback
-        tcp_server::dispatcher.cb(ibuf.data(), header.length, header.cmdid, this);
-        ibuf.pop(header.length);
+        tcp_server::dispatcher.cb(ibuf.data(), head.length, head.cmdid, this);
+        ibuf.pop(head.length);
     }
 }
 
