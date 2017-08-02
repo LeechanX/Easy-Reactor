@@ -24,9 +24,12 @@ struct io_buffer
 
     void adjust()//move data to head
     {
-        if (head != 0)
+        if (head)
         {
-            ::memmove(data, data + head, length);
+            if (length)
+            {
+                ::memmove(data, data + head, length);
+            }
             head = 0;
         }
     }

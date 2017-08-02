@@ -147,7 +147,7 @@ void tcp_server::do_accept()
             //connfd and max connections
             int curr_conns;
             get_conn_num(curr_conns);
-            if (curr_conns == _max_conns)
+            if (curr_conns >= _max_conns)
             {
                 error_log("connection exceeds the maximum connection count %d", _max_conns);
                 ::close(connfd);

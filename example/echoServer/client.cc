@@ -1,4 +1,5 @@
 #include <time.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <iostream>
 #include "echoMsg.pb.h"
@@ -25,7 +26,7 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
     long curTs = time(NULL);
     if (curTs - qps->lstTs >= 1)
     {
-        cout << qps->succ << endl;
+        printf(" ** qps:%d **\n", qps->succ);
         qps->lstTs = curTs;
         qps->succ = 0;
     }

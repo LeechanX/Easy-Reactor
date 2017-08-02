@@ -120,9 +120,10 @@ int tcp_client::send_data(const char* data, uint32_t datlen, int cmdid)//call by
     commu_head head;
     head.cmdid = cmdid;
     head.length = datlen;
-    ::memcpy(obuf.data + obuf.length, &head, COMMU_HEAD_LENGTH);
 
+    ::memcpy(obuf.data + obuf.length, &head, COMMU_HEAD_LENGTH);
     obuf.length += COMMU_HEAD_LENGTH;
+
     ::memcpy(obuf.data + obuf.length, data, datlen);
     obuf.length += datlen;
 
@@ -142,33 +143,29 @@ int tcp_client::handle_read()
         return -1;
     }
     assert((uint32_t)rn <= ibuf.capacity - ibuf.length);
-    while (true)
+    int ret;
+    do
     {
-        int r = ::read(_sockfd, ibuf.data + ibuf.length, rn);
-        if (r == -1)
-        {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            else
-            {
-                error_log("read()");
-                clean_conn();
-                return -1;
-            }
-        }
-        else if (r == 0)
-        {
-            //peer close connection
-            error_log("connection closed by peer");
-            clean_conn();
-            return -1;
-        }
-        assert(r == rn);
-        ibuf.length += r;
-        break;
+        ret = ::read(_sockfd, ibuf.data + ibuf.length, rn);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret == 0)
+    {
+        //peer close connection
+        error_log("connection closed by peer");
+        clean_conn();
+        return -1;
     }
+    else if (ret == -1)
+    {
+        assert(errno != EAGAIN);
+        error_log("read()");
+        clean_conn();
+        return -1;
+    }
+    assert(ret == rn);
+    ibuf.length += ret;
+
     commu_head head;
     int cmdid, length;
     while (ibuf.length >= COMMU_HEAD_LENGTH)
@@ -183,8 +180,7 @@ int tcp_client::handle_read()
             break;
         }
 
-        ibuf.head += COMMU_HEAD_LENGTH;
-        ibuf.length -= COMMU_HEAD_LENGTH;
+        ibuf.pop(COMMU_HEAD_LENGTH);
 
         if (!_dispatcher.exist(cmdid))
         {
@@ -194,50 +190,35 @@ int tcp_client::handle_read()
         }
         _dispatcher.cb(ibuf.data + ibuf.head, length, cmdid, this);
 
-        ibuf.head += length;
-        ibuf.length -= length;
+        ibuf.pop(length);
     }
-    ::memmove(ibuf.data, ibuf.data + ibuf.head, ibuf.length);
-    ibuf.head = 0;
+    ibuf.adjust();
     return 0;
 }
 
 int tcp_client::handle_write()
 {
-    while (obuf.length)
+    assert(obuf.head == 0 && obuf.length);
+    int ret;
+    do
     {
-        int w = ::write(_sockfd, obuf.data + obuf.head, obuf.length);
-        if (w == -1)
-        {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            else if (errno == EAGAIN)
-            {
-                break;
-            }
-            else
-            {
-                error_log("write()");
-                clean_conn();
-                return -1;
-            }
-        }
-        else
-        {
-            obuf.head += w;
-            obuf.length -= w;
-        }
+        ret = ::write(_sockfd, obuf.data, obuf.length);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret > 0)
+    {
+        obuf.pop(ret);
+        obuf.adjust();
     }
-    if (obuf.length)
+    else if (ret == -1 && errno != EAGAIN)
     {
-        ::memmove(obuf.data, obuf.data + obuf.head, obuf.length);
-        obuf.head = 0;
+        error_log("write()");
+        clean_conn();
+        return -1;
     }
-    else
+
+    if (!obuf.length)
     {
-        obuf.head = 0;
         _loop->del_ioev(_sockfd, EPOLLOUT);
     }
     return 0;
