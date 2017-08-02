@@ -168,113 +168,7 @@ pthread_mutex_t buffer_pool::_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_once_t buffer_pool::_once = PTHREAD_ONCE_INIT;
 
-int input_buffer::read_data(int fd)
-{
-    uint32_t rn;
-    if (::ioctl(fd, FIONREAD, &rn) == -1)
-    {
-        error_log("ioctl FIONREAD");
-        return -1;
-    }
-    if (!_buf)
-    {
-        _buf = buffer_pool::ins()->alloc(rn);
-        error_if(_buf == NULL, "no idle for alloc io_buffer");
-        return -1;//need to close connection
-
-        int rd = ::read(fd, _buf->data, rn);
-        if (rd == -1)
-        {
-            error_log("read tcp socket");
-            return -1;
-        }
-        else if (rd == 0)
-        {
-            //The peer is closed, return -2
-            return -2;
-        }
-        else
-        {
-            assert(rn == (uint32_t)rd);
-            //must read out rn bytes
-            _buf->length = rn;
-        }
-    }
-    else
-    {
-        if (_buf->capacity - _buf->length >= rn)
-        {
-            //can hold on
-            //adjust original data to buf head
-            _buf->adjust();
-
-            int rd = ::read(fd, _buf->data + _buf->length, rn);
-            if (rd == -1)
-            {
-                error_log("read tcp socket");
-                return -1;
-            }
-            else if (rd == 0)
-            {
-                //The peer is closed, return -2
-                return -2;
-            }
-            else
-            {
-                assert((uint32_t)rd == rn);
-                //must read out rn bytes
-                _buf->length += rn;
-            }
-        }
-        else
-        {
-            //get new
-            io_buffer* new_buf = buffer_pool::ins()->alloc(rn + _buf->length);
-            error_if(new_buf == NULL, "no idle for alloc io_buffer");
-            return -1;//need to close connection
-
-            //_buf data move to new_buf
-            new_buf->copy(_buf);
-            buffer_pool::ins()->revert(_buf);
-            _buf = new_buf;
-
-            //append to _buf->length
-            int rd = ::read(fd, _buf->data + _buf->length, rn);
-            if (rd == -1)
-            {
-                error_log("read tcp socket");
-                return -1;
-            }
-            else if (rd == 0)
-            {
-                //The peer is closed, return -2
-                return -2;
-            }
-            else
-            {
-                assert((uint32_t)rd == rn);
-                //must read out rn bytes
-                _buf->length += rn;
-            }
-        }
-    }
-    return 0;
-}
-
-void input_buffer::pop(uint32_t len)
-{
-    assert(_buf && len <= _buf->length);
-    _buf->length -= len;
-    _buf->head += len;
-    //buf is empty
-    if (!_buf->length)
-    {
-        buffer_pool::ins()->revert(_buf);
-        _buf = NULL;
-    }
-}
-
-void input_buffer::clear()
+void tcp_buffer::clear()
 {
     if (_buf)
     {
@@ -283,159 +177,112 @@ void input_buffer::clear()
     }
 }
 
-void output_buffer::send_data(const char* data, uint32_t datlen)
+void tcp_buffer::pop(uint32_t len)
 {
-    if (_buf_lst.empty())
+    assert(_buf && len <= _buf->length);
+    _buf->pop(len);
+    //buf is empty
+    if (!_buf->length)
     {
-        //alloc for 4K
-        int buf_cnt = datlen / buffer_pool::u4K;
-        if (datlen % buffer_pool::u4K)
+        buffer_pool::ins()->revert(_buf);
+        _buf = NULL;
+    }
+}
+
+int input_buffer::read_data(int fd)
+{
+    int rn, ret;
+    if (::ioctl(fd, FIONREAD, &rn) == -1)
+    {
+        error_log("ioctl FIONREAD");
+        return -1;
+    }
+    if (!_buf)
+    {
+        _buf = buffer_pool::ins()->alloc(rn);
+        if (!_buf)
         {
-            buf_cnt += 1;
-        }
-        for (int i = 0;i < buf_cnt; ++i)
-        {
-            io_buffer* new_buf = buffer_pool::ins()->alloc(buffer_pool::u4K);
-            exit_if(new_buf == NULL, "alloc io_buffer");
-            _buf_lst.push_back(new_buf);
-        }
-        buff_it it = _buf_lst.begin();
-        int cp = 0;
-        while (datlen)
-        {
-            io_buffer* buf = *it;
-            if (datlen > buf->capacity)
-            {
-                ::memcpy(buf->data + cp, data + cp, buf->capacity);
-                datlen -= buf->capacity;
-                cp += buf->capacity;
-                buf->length = buf->capacity;
-            }
-            else
-            {
-                ::memcpy(buf->data + cp, data + cp, datlen);
-                buf->length = datlen;
-                break;
-            }
-            ++it;
+            error_log("no idle for alloc io_buffer");
+            return -1;            
         }
     }
     else
     {
-        io_buffer* buffer = _buf_lst.back();
-        if (buffer->head)
+        assert(_buf->head == 0);
+        if (_buf->capacity - _buf->length < (uint32_t)rn)
         {
-            ::memmove(buffer->data, buffer->data + buffer->head, buffer->length);
-            buffer->head = 0;
-        }
-        if (buffer->capacity - buffer->length >= datlen)
-        {
-            ::memcpy(buffer->data + buffer->length, data, datlen);
-            buffer->length += datlen;
-        }
-        else
-        {
-            //memcpy
-            uint32_t left_len = buffer->capacity - buffer->length;
-            ::memcpy(buffer->data + buffer->length, data, left_len);
-            datlen -= left_len;
-            data += left_len;
-
-            //alloc for 4K
-            int buf_cnt = datlen / buffer_pool::u4K;
-            if (datlen % buffer_pool::u4K)
+            //get new
+            io_buffer* new_buf = buffer_pool::ins()->alloc(rn + _buf->length);
+            if (!new_buf)
             {
-                datlen += 1;
+                error_log("no idle for alloc io_buffer");
+                return -1;
             }
-            buff_it it;
-            for (int i = 0;i < buf_cnt; ++i)
-            {
-                io_buffer* new_buf = buffer_pool::ins()->alloc(buffer_pool::u4K);
-                exit_if(new_buf == NULL, "alloc io_buffer");
-                _buf_lst.push_back(new_buf);
-                if (i == 0)
-                {
-                    it = _buf_lst.end();
-                    --it;
-                }
-            }
-
-            int cp = 0;
-            while (datlen)
-            {
-                io_buffer* buf = *it;
-                if (datlen > buf->capacity)
-                {
-                    ::memcpy(buf->data + cp, data + cp, buf->capacity);
-                    datlen -= buf->capacity;
-                    cp += buf->capacity;
-                    buf->length = buf->capacity;
-                }
-                else
-                {
-                    ::memcpy(buf->data + cp, data + cp, datlen);
-                    buf->length = datlen;
-                    break;
-                }
-                ++it;
-            }
+            new_buf->copy(_buf);
+            buffer_pool::ins()->revert(_buf);
+            _buf = new_buf;
         }
     }
+
+    do
+    {
+        ret = ::read(fd, _buf->data + _buf->length, rn);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret > 0)
+    {
+        assert(ret == rn);
+        _buf->length += ret;
+    }
+    return ret;
+}
+
+int output_buffer::send_data(const char* data, uint32_t datlen)
+{
+    if (!_buf)
+    {
+        _buf = buffer_pool::ins()->alloc(datlen);
+        if (!_buf)
+        {
+            error_log("no idle for alloc io_buffer");
+            return -1;
+        }
+    }
+    else
+    {
+        assert(_buf->head == 0);
+        if (_buf->capacity - _buf->length < datlen)
+        {
+            //get new
+            io_buffer* new_buf = buffer_pool::ins()->alloc(datlen + _buf->length);
+            if (!new_buf)
+            {
+                error_log("no idle for alloc io_buffer");
+                return -1;
+            }
+            new_buf->copy(_buf);
+            buffer_pool::ins()->revert(_buf);
+            _buf = new_buf;
+        }
+    }
+
+    ::memcpy(_buf->data + _buf->length, data, datlen);
+    _buf->length += datlen;
+    return 0;
 }
 
 int output_buffer::write_fd(int fd)
 {
-    struct iovec iov[100];
-    int iov_cnt = 0;
-    if (_buf_lst.size() > 100)
+    assert(_buf && _buf->head == 0);
+    int ret;
+    do
     {
-        error_log("output too large, can't write more now");
-        return -2;
-    }
-    for (buff_it it = _buf_lst.begin();it != _buf_lst.end(); ++it)
+        ret = ::write(fd, _buf->data, _buf->length);
+    } while (ret == -1 && errno == EINTR);
+    if (ret > 0)
     {
-        io_buffer* buffer = *it;
-        iov[iov_cnt].iov_base = buffer->data + buffer->head;
-        iov[iov_cnt].iov_len = buffer->length;
-        ++iov_cnt;
+        _buf->pop(ret);
+        _buf->adjust();
     }
-    int wr = ::writev(fd, iov, iov_cnt);
-    int wr_cnt = wr;
-    while (wr_cnt > 0)
-    {
-        io_buffer* buffer = _buf_lst.front();
-        if (buffer->length <= (uint32_t)wr_cnt)
-        {
-            wr_cnt -= buffer->length;
-            buffer_pool::ins()->revert(buffer);
-            _buf_lst.pop_front();
-        }
-        else
-        {
-            buffer->head += wr_cnt;
-            break;
-        }
-    }
-    return wr;
-}
-
-void output_buffer::clear()
-{
-    while (!_buf_lst.empty())
-    {
-        io_buffer* buffer = _buf_lst.front();
-        buffer_pool::ins()->revert(buffer);
-        _buf_lst.pop_front();
-    }
-}
-
-uint32_t output_buffer::length() const
-{
-    uint32_t len = 0;
-    for (cbuff_it it = _buf_lst.begin();it != _buf_lst.end(); ++it)
-    {
-        io_buffer* buffer = *it;
-        len += buffer->length;
-    }
-    return len;
+    return ret;
 }

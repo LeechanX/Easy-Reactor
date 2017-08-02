@@ -39,6 +39,12 @@ struct io_buffer
         length = other->length;
     }
 
+    void pop(uint32_t len)
+    {
+        length -= len;
+        head += len;
+    }
+
     uint32_t capacity;
     uint32_t length;
     uint32_t head;
@@ -92,16 +98,11 @@ private:
     static pthread_once_t _once;
 };
 
-class input_buffer
+struct tcp_buffer
 {
-public:
-    input_buffer(): _buf(NULL) { }
+    tcp_buffer(): _buf(NULL) { }
 
-    ~input_buffer() { clear(); }
-
-    int read_data(int fd);
-
-    const char* data() const { return _buf? _buf->data + _buf->head: NULL; }
+    ~tcp_buffer() { clear(); }
 
     const uint32_t length() const { return _buf? _buf->length: 0; }
 
@@ -109,26 +110,26 @@ public:
 
     void clear();
 
-private:
+protected:
     io_buffer* _buf;
 };
 
-class output_buffer
+class input_buffer: public tcp_buffer
 {
 public:
-    ~output_buffer() { clear(); }
+    int read_data(int fd);
 
-    void send_data(const char* data, uint32_t datlen);
+    const char* data() const { return _buf? _buf->data + _buf->head: NULL; }
+
+    void adjust() { if (_buf) _buf->adjust(); }
+};
+
+class output_buffer: public tcp_buffer
+{
+public:
+    int send_data(const char* data, uint32_t datlen);
 
     int write_fd(int fd);
-
-    uint32_t length() const;
-
-    void clear();
-private:
-    std::list<io_buffer*> _buf_lst;
-    typedef std::list<io_buffer*>::iterator buff_it;
-    typedef std::list<io_buffer*>::const_iterator cbuff_it;
 };
 
 #endif

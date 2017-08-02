@@ -41,7 +41,7 @@ void tcp_conn::handle_read()
         clean_conn();
         return ;
     }
-    else if (ret == -2)
+    else if (ret == 0)
     {
         //The peer is closed, return -2
         error_log("connection closed by peer");
@@ -77,6 +77,7 @@ void tcp_conn::handle_read()
         tcp_server::dispatcher.cb(ibuf.data(), head.length, head.cmdid, this);
         ibuf.pop(head.length);
     }
+    ibuf.adjust();
 }
 
 void tcp_conn::handle_write()
@@ -106,9 +107,19 @@ int tcp_conn::send_data(const char* data, uint32_t datlen, int cmdid)
     commu_head head;
     head.cmdid = cmdid;
     head.length = datlen;
-    obuf.send_data((const char*)&head, COMMU_HEAD_LENGTH);
+    //write head
+    int ret = obuf.send_data((const char*)&head, COMMU_HEAD_LENGTH);
+    if (ret != 0)
+        return -1;
     //write content
-    obuf.send_data(data, datlen);
+    ret = obuf.send_data(data, datlen);
+    if (ret != 0)
+    {
+        //只好取消写入的消息头
+        obuf.pop(COMMU_HEAD_LENGTH);
+        return -1;
+    }
+
     if (need_listen)
     {
         _loop->add_ioev(_connfd, tcp_wcb, EPOLLOUT, this);
