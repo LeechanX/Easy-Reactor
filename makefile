@@ -25,4 +25,4 @@ $(TARGET): $(OBJS)
 .PHONY: clean
 
 clean:
-	-rm -f src/*.o $(TARGET)
+	-rm -f src/*.o src/*.d $(TARGET)
