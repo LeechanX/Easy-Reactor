@@ -97,6 +97,7 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const ch
 
 tcp_server::~tcp_server()
 {
+    _loop->del_ioev(_sockfd);
     ::close(_sockfd);
     ::close(_reservfd);
     delete _loop;
