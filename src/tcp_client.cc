@@ -65,6 +65,10 @@ tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port):
     _loop(loop)
 {
     //ignore SIGHUP and SIGPIPE
+    if (::signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    {
+        error_log("signal ignore SIGPIPE");
+    }
     if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
     {
         error_log("signal ignore SIGHUP");
