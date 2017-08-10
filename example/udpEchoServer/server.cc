@@ -19,7 +19,7 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 int main()
 {
     event_loop loop;
-    udp_server server(&loop, "127.0.0.1", 12315, "myconf.ini");//创建TCP服务器
+    udp_server server(&loop, "127.0.0.1", 12315);//创建TCP服务器
     server.add_msg_cb(1, buz);//设置：当收到消息id = 1的消息调用的回调函数  我们约定EchoString消息的ID是1
     loop.process_evs();
     return 0;
