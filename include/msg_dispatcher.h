@@ -1,6 +1,7 @@
 #ifndef __MSG_DISPATCHER_H__
 #define __MSG_DISPATCHER_H__
 
+#include <assert.h>
 #include <pthread.h>
 #include <ext/hash_map>
 #include "net_commu.h"
