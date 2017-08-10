@@ -7,7 +7,6 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/tcp.h>
 
 #include "tcp_conn.h"
 #include "tcp_server.h"
@@ -27,7 +26,7 @@ int tcp_server::_curr_conns = 0;
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 msg_dispatcher tcp_server::dispatcher;
 
-tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path)
+tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path): _keepalive(false)
 {
     //ignore SIGHUP and SIGPIPE
     if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
@@ -52,12 +51,9 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const ch
     exit_if(ret == 0, "ip format %s", ip);
     servaddr.sin_port = htons(port);
 
-    int open_flag = 1;
-    ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &open_flag, sizeof(open_flag));
+    int opend = 1;
+    ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &opend, sizeof(opend));
     error_if(ret < 0, "setsockopt SO_REUSEADDR");
-
-    ret = ::setsockopt(_sockfd, IPPROTO_TCP, TCP_NODELAY, &open_flag, sizeof(open_flag));
-    error_if(ret < 0, "setsockopt TCP_NODELAY");
 
     ret = ::bind(_sockfd, (const struct sockaddr*)&servaddr, sizeof servaddr);
     exit_if(ret == -1, "bind()");
@@ -101,13 +97,6 @@ tcp_server::~tcp_server()
     ::close(_sockfd);
     ::close(_reservfd);
     delete _loop;
-}
-
-void tcp_server::keep_alive()
-{
-    int open_flag = 1;
-    int ret = ::setsockopt(_sockfd, SOL_SOCKET, SO_KEEPALIVE, &open_flag, sizeof(open_flag));
-    error_if(ret < 0, "setsockopt SO_KEEPALIVE");
 }
 
 void tcp_server::do_accept()
@@ -156,6 +145,14 @@ void tcp_server::do_accept()
             else
             {
                 assert(connfd < _conns_size);
+
+                if (_keepalive)
+                {
+                    int opend = 1;
+                    int ret = ::setsockopt(connfd, SOL_SOCKET, SO_KEEPALIVE, &opend, sizeof(opend));
+                    error_if(ret < 0, "setsockopt SO_KEEPALIVE");
+                }
+
                 //multi-thread reactor model: round-robin a event loop and give message to it
                 if (_thd_pool)
                 {

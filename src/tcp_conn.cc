@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <netinet/tcp.h>
 
 static void tcp_rcb(event_loop* loop, int fd, void *args)
 {
@@ -26,6 +27,12 @@ void tcp_conn::init(int connfd, event_loop* loop)
     //set NONBLOCK
     int flag = ::fcntl(_connfd, F_GETFL, 0);
     ::fcntl(_connfd, F_SETFL, O_NONBLOCK | flag);
+
+    //set NODELAY
+    int opend = 1;
+    int ret = ::setsockopt(_connfd, IPPROTO_TCP, TCP_NODELAY, &opend, sizeof(opend));
+    error_if(ret < 0, "setsockopt TCP_NODELAY");
+
     _loop->add_ioev(_connfd, tcp_rcb, EPOLLIN | EPOLLET, this);
 
     tcp_server::inc_conn();

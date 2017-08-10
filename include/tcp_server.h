@@ -14,7 +14,7 @@ public:
 
     ~tcp_server();
 
-    void keep_alive();
+    void keep_alive() { _keepalive = true; }
 
     void do_accept();
 
@@ -33,6 +33,7 @@ private:
     thread_pool* _thd_pool;
     struct sockaddr_in _connaddr;
     socklen_t _addrlen;
+    bool _keepalive;
 
     static int _conns_size;
     static int _max_conns;
