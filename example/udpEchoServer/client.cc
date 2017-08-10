@@ -43,7 +43,7 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 void* domain(void* args)
 {
     event_loop loop;
-    udp_client client(&loop, "127.0.0.1", 12315);//创建TCP客户端
+    udp_client client(&loop, "127.0.0.1", 12315);//创建UDP客户端
 
 //    testQPS qps;
 //    client.add_msg_cb(1, buz, (void*)&qps);//设置：当收到消息id=1的消息时的回调函数
