@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <strings.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -28,6 +29,7 @@ msg_dispatcher tcp_server::dispatcher;
 
 tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path): _keepalive(false)
 {
+    ::bzero(&_connaddr, sizeof (_connaddr));
     //ignore SIGHUP and SIGPIPE
     if (::signal(SIGHUP, SIG_IGN) == SIG_ERR)
     {
@@ -46,6 +48,7 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const ch
     error_if(_reservfd == -1, "open()");
 
     struct sockaddr_in servaddr;
+    ::bzero(&servaddr, sizeof (servaddr));
     servaddr.sin_family = AF_INET;
     int ret = ::inet_aton(ip, &servaddr.sin_addr);
     exit_if(ret == 0, "ip format %s", ip);
@@ -145,7 +148,6 @@ void tcp_server::do_accept()
             else
             {
                 assert(connfd < _conns_size);
-
                 if (_keepalive)
                 {
                     int opend = 1;

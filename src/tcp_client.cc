@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -70,6 +71,7 @@ tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port):
     }
 
     //construct server address
+    ::bzero(&_servaddr, sizeof (_servaddr));
     _servaddr.sin_family = AF_INET;
     int ret = ::inet_aton(ip, &_servaddr.sin_addr);
     exit_if(ret == 0, "ip format %s", ip);
