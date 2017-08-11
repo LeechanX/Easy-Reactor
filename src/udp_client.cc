@@ -79,7 +79,7 @@ void udp_client::handle_read()
     }
 }
 
-int udp_client::send_data(const char* data, uint32_t datlen, int cmdid)
+int udp_client::send_data(const char* data, int datlen, int cmdid)
 {
     if (datlen > MSG_LENGTH_LIMIT)
     {

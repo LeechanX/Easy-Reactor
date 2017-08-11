@@ -19,7 +19,7 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 {
     testQPS* qps = (testQPS*)usr_data;//获取用户参数
     EchoString req, rsp;
-    if (rsp.ParseFromArray(data, len))
+    if (rsp.ParseFromArray(data, len) && rsp.content() == "I miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you!")
     {
         qps->succ++;
     }

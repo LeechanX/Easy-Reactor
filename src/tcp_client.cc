@@ -111,7 +111,7 @@ void tcp_client::do_connect()
     }
 }
 
-int tcp_client::send_data(const char* data, uint32_t datlen, int cmdid)//call by user
+int tcp_client::send_data(const char* data, int datlen, int cmdid)//call by user
 {
     bool need = (obuf.length == 0 && net_ok) ? true: false;//if need to add to event loop
     if (datlen + COMMU_HEAD_LENGTH > obuf.capacity - obuf.length)
@@ -144,7 +144,7 @@ int tcp_client::handle_read()
         error_log("ioctl FIONREAD");
         return -1;
     }
-    assert((uint32_t)rn <= ibuf.capacity - ibuf.length);
+    assert(rn <= ibuf.capacity - ibuf.length);
     int ret;
     do
     {

@@ -16,7 +16,7 @@ public:
 
     void do_connect();
 
-    int send_data(const char* data, uint32_t datlen, int cmdid);
+    int send_data(const char* data, int datlen, int cmdid);
 
     int handle_read();
 

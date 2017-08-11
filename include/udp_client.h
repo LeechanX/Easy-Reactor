@@ -20,7 +20,7 @@ public:
 
     void handle_read();
 
-    virtual int send_data(const char* data, uint32_t datlen, int cmdid);
+    virtual int send_data(const char* data, int datlen, int cmdid);
 
 private:
     int _sockfd;

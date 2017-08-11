@@ -105,7 +105,7 @@ void tcp_conn::handle_write()
     }
 }
 
-int tcp_conn::send_data(const char* data, uint32_t datlen, int cmdid)
+int tcp_conn::send_data(const char* data, int datlen, int cmdid)
 {
     bool need_listen = false;
     if (!obuf.length())
