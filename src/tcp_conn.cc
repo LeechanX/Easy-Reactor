@@ -136,12 +136,12 @@ int tcp_conn::send_data(const char* data, int datlen, int cmdid)
 
 void tcp_conn::clean_conn()
 {
+    tcp_server::dec_conn();
     _loop->del_ioev(_connfd);
     _loop = NULL;
-    ::close(_connfd);
-    _connfd = -1;
     ibuf.clear();
     obuf.clear();
-
-    tcp_server::dec_conn();
+    int fd = _connfd;
+    _connfd = -1;
+    ::close(fd);
 }
