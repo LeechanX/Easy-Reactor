@@ -9,9 +9,9 @@
 
 #define EXTRA_MEM_LIMIT (5U * 1024 * 1024) //unit is K, so EXTRA_MEM_LIMIT = 5GB
 
-io_buffer* buffer_pool::alloc(uint32_t N)
+io_buffer* buffer_pool::alloc(int N)
 {
-    uint32_t index;
+    int index;
     if (N <= u4K)
         index = u4K;
     else if (N <= u16K)
@@ -177,7 +177,7 @@ void tcp_buffer::clear()
     }
 }
 
-void tcp_buffer::pop(uint32_t len)
+void tcp_buffer::pop(int len)
 {
     assert(_buf && len <= _buf->length);
     _buf->pop(len);
@@ -209,7 +209,7 @@ int input_buffer::read_data(int fd)
     else
     {
         assert(_buf->head == 0);
-        if (_buf->capacity - _buf->length < (uint32_t)rn)
+        if (_buf->capacity - _buf->length < (int)rn)
         {
             //get new
             io_buffer* new_buf = buffer_pool::ins()->alloc(rn + _buf->length);
@@ -237,7 +237,7 @@ int input_buffer::read_data(int fd)
     return ret;
 }
 
-int output_buffer::send_data(const char* data, uint32_t datlen)
+int output_buffer::send_data(const char* data, int datlen)
 {
     if (!_buf)
     {

@@ -3,14 +3,14 @@
 
 #include <list>
 #include <string.h>
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <ext/hash_map>
 
 struct io_buffer
 {
-    io_buffer(uint32_t size): 
+    io_buffer(int size): 
     capacity(size), length(0), head(0), next(NULL)
     {
         data = new char[size];
@@ -42,15 +42,15 @@ struct io_buffer
         length = other->length;
     }
 
-    void pop(uint32_t len)
+    void pop(int len)
     {
         length -= len;
         head += len;
     }
 
-    uint32_t capacity;
-    uint32_t length;
-    uint32_t head;
+    int capacity;
+    int length;
+    int head;
     io_buffer* next;
     char* data;
 };
@@ -81,7 +81,7 @@ public:
         return _ins;
     }
 
-    io_buffer* alloc(uint32_t N);
+    io_buffer* alloc(int N);
 
     io_buffer* alloc() { return alloc(u4K); }
 
@@ -93,7 +93,7 @@ private:
     buffer_pool(const buffer_pool&);
     const buffer_pool& operator=(const buffer_pool&);
 
-    typedef __gnu_cxx::hash_map<uint32_t, io_buffer*> pool_t;
+    typedef __gnu_cxx::hash_map<int, io_buffer*> pool_t;
     pool_t _pool;
     uint64_t _total_mem;
     static buffer_pool* _ins;
@@ -107,9 +107,9 @@ struct tcp_buffer
 
     ~tcp_buffer() { clear(); }
 
-    const uint32_t length() const { return _buf? _buf->length: 0; }
+    const int length() const { return _buf? _buf->length: 0; }
 
-    void pop(uint32_t len);
+    void pop(int len);
 
     void clear();
 
@@ -130,7 +130,7 @@ public:
 class output_buffer: public tcp_buffer
 {
 public:
-    int send_data(const char* data, uint32_t datlen);
+    int send_data(const char* data, int datlen);
 
     int write_fd(int fd);
 };

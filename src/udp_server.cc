@@ -78,10 +78,10 @@ void udp_server::handle_read()
         //handle package _rbuf[0:pkg_len)
         commu_head head;
         ::memcpy(&head, _rbuf, COMMU_HEAD_LENGTH);
-        if (head.length > MSG_LENGTH_LIMIT || head.length < 0 || head.length != pkg_len - MSG_LENGTH_LIMIT)
+        if (head.length > MSG_LENGTH_LIMIT || head.length < 0 || head.length + COMMU_HEAD_LENGTH != pkg_len)
         {
             //data format is messed up
-            error_log("data format error in data head, close connection");
+            error_log("data format error in data head, head[%d,%d], pkg_len %d", head.length, head.cmdid, pkg_len);
             continue;
         }
         _dispatcher.cb(_rbuf + COMMU_HEAD_LENGTH, head.length, head.cmdid, this);

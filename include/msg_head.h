@@ -7,8 +7,8 @@ struct commu_head
     int length;
 };
 
-#define COMMU_HEAD_LENGTH sizeof(commu_head)
+#define COMMU_HEAD_LENGTH 8
 
-#define MSG_LENGTH_LIMIT ((int)(65536 - COMMU_HEAD_LENGTH))
+#define MSG_LENGTH_LIMIT (65536 - COMMU_HEAD_LENGTH)
 
 #endif
