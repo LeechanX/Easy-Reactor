@@ -19,7 +19,12 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 int main()
 {
     event_loop loop;
-    udp_server server(&loop, "127.0.0.1", 12315);//创建UDP服务器
+    config_reader::setPath("myconf.ini");
+    string ip = config_reader::ins()->GetString("reactor", "ip", "0.0.0.0");
+    short port = config_reader::ins()->GetNumber("reactor", "port", 12315);
+
+    udp_server server(&loop, ip.c_str(), port);//创建UDP服务器
+
     server.add_msg_cb(1, buz);//设置：当收到消息id = 1的消息调用的回调函数  我们约定EchoString消息的ID是1
     loop.process_evs();
     return 0;

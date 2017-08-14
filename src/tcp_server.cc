@@ -27,7 +27,7 @@ int tcp_server::_curr_conns = 0;
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 msg_dispatcher tcp_server::dispatcher;
 
-tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path): _keepalive(false)
+tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port): _keepalive(false)
 {
     ::bzero(&_connaddr, sizeof (_connaddr));
     //ignore SIGHUP and SIGPIPE
@@ -67,8 +67,6 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port, const ch
     _loop = loop;
 
     _addrlen = sizeof (struct sockaddr_in);
-    //load configure
-    config_reader::setPath(conf_path);
 
     //if mode is multi-thread reactor, create thread pool
     int thread_cnt = config_reader::ins()->GetNumber("reactor", "threadNum", 0);

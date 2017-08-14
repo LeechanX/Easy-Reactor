@@ -10,7 +10,7 @@
 class tcp_server
 {
 public:
-    tcp_server(event_loop* loop, const char* ip, uint16_t port, const char* conf_path);
+    tcp_server(event_loop* loop, const char* ip, uint16_t port);
 
     ~tcp_server();
 
