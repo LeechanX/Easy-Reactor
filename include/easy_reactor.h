@@ -7,5 +7,6 @@
 #include "tcp_client.h"
 #include "net_commu.h"
 #include "msg_head.h"
+#include "config_reader.h"
 
 #endif
