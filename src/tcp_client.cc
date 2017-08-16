@@ -43,6 +43,11 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     {
         //connect build success!
         cli->net_ok = true;
+        info_log("connection success");
+
+        //call on connection callback(if has)
+        cli->call_onconnect();
+
         loop->add_ioev(fd, read_cb, EPOLLIN | EPOLLET, cli);
         if (cli->obuf.length)
         {
@@ -62,7 +67,9 @@ tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port):
     ibuf(4194304),
     obuf(4194304),
     _sockfd(-1),
-    _loop(loop)
+    _loop(loop),
+    _onconnection(NULL),
+    _onconn_args(NULL)
 {
     //ignore SIGPIPE
     if (::signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -94,14 +101,13 @@ void tcp_client::do_connect()
     if (ret == 0)
     {
         net_ok = true;
-        error_log("connection finish");//debug
+        info_log("connection success");
     }
     else
     {
         if (errno == EINPROGRESS)
         {
             //add connection event
-            error_log("connection is doing");//debug
             _loop->add_ioev(_sockfd, connection_cb, EPOLLOUT, this);
         }
         else
@@ -154,7 +160,7 @@ int tcp_client::handle_read()
     if (ret == 0)
     {
         //peer close connection
-        error_log("connection closed by peer");
+        info_log("connection closed by peer");
         clean_conn();
         return -1;
     }

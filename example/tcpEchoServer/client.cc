@@ -39,6 +39,16 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
     commu->send_data(reqStr.c_str(), reqStr.size(), cmdid);//回复消息
 }
 
+void whenConnectDone(tcp_client* client, void* args)
+{
+    EchoString req;
+    req.set_id(100);
+    req.set_content("I miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you!");
+    string reqStr;
+    req.SerializeToString(&reqStr);
+    client->send_data(reqStr.c_str(), reqStr.size(), 1);//主动发送消息
+}
+
 void* domain(void* args)
 {
     event_loop loop;
@@ -46,13 +56,7 @@ void* domain(void* args)
 
     testQPS qps;
     client.add_msg_cb(1, buz, (void*)&qps);//设置：当收到消息id=1的消息时的回调函数
-
-    EchoString req;
-    req.set_id(100);
-    req.set_content("I miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you i miss you!");
-    string reqStr;
-    req.SerializeToString(&reqStr);
-    client.send_data(reqStr.c_str(), reqStr.size(), 1);//主动发送消息
+    client.setup_connectcb(whenConnectDone);
 
     loop.process_evs();
     return NULL;

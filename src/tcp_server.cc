@@ -64,6 +64,8 @@ tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port): _keepal
     ret = ::listen(_sockfd, 500);
     exit_if(ret == -1, "listen()");
 
+    info_log("server on %s:%u is running...", ip, port);
+
     _loop = loop;
 
     _addrlen = sizeof (struct sockaddr_in);

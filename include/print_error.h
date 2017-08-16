@@ -18,6 +18,8 @@
         } \
     } while (0)
 
+#define info_log(fmt, args...) fprintf(stdout, fmt "\n", ##args)
+
 #define error_log(fmt, args...) error_if(1, fmt, ##args)
 
 inline void exit_if(int condition, const char *fmt, ...)
