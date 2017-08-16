@@ -51,7 +51,7 @@ void tcp_conn::handle_read()
     else if (ret == 0)
     {
         //The peer is closed, return -2
-        error_log("connection closed by peer");
+        info_log("connection closed by peer");
         clean_conn();
         return ;
     }
