@@ -44,6 +44,8 @@ udp_server::udp_server(event_loop* loop, const char* ip, uint16_t port)
     ::bzero(&_srcaddr, sizeof (_srcaddr));
     _addrlen = sizeof (struct sockaddr_in);
 
+    info_log("server on %s:%u is running...", ip, port);
+
     //add accepter event
     _loop->add_ioev(_sockfd, read_cb, EPOLLIN | EPOLLET, this);
 }
