@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "msg_head.h"
 #include "tcp_conn.h"
 #include "tcp_server.h"
 #include "print_error.h"
@@ -157,7 +158,7 @@ void tcp_server::do_accept()
                 //multi-thread reactor model: round-robin a event loop and give message to it
                 if (_thd_pool)
                 {
-                    thread_queue* cq = _thd_pool->get_next_thread();
+                    thread_queue<queue_msg>* cq = _thd_pool->get_next_thread();
                     queue_msg msg;
                     msg.cmd_type = queue_msg::NEW_CONN;
                     msg.connfd = connfd;
