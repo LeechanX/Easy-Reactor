@@ -62,18 +62,6 @@ thread_pool::thread_pool(int thread_cnt): _curr_index(0), _thread_cnt(thread_cnt
     }
 }
 
-thread_pool::~thread_pool()
-{
-    for (int i = 0;i < _thread_cnt; ++i)
-    {
-        //TODO: how to kill thread?
-        //will let other thread coredump
-        delete _pool[i];//problem
-    }
-    delete[] _pool;
-    delete[] _tids;
-}
-
 thread_queue<queue_msg>* thread_pool::get_next_thread()
 {
     if (_curr_index == _thread_cnt)
