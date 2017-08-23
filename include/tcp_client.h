@@ -40,6 +40,8 @@ public:
 
     void clean_conn();
 
+    event_loop* loop() { return _loop; }
+
     bool net_ok;
     io_buffer ibuf, obuf;
 
