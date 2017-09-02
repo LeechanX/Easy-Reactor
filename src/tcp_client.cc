@@ -239,9 +239,10 @@ void tcp_client::clean_conn()
         _loop->del_ioev(_sockfd);
         ::close(_sockfd);
     }
-    //ibuf.clear();
-    //obuf.clear();
     net_ok = false;
+
+    //call callback when on connection close
+    call_onclose();
 
     //connect
     do_connect();

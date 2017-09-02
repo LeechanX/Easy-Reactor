@@ -56,7 +56,8 @@ void* domain(void* args)
 
     testQPS qps;
     client.add_msg_cb(1, buz, (void*)&qps);//设置：当收到消息id=1的消息时的回调函数
-    client.setup_connectcb(whenConnectDone);
+    //安装连接建立后调用的回调函数
+    client.onConnection(whenConnectDone);
 
     loop.process_evs();
     return NULL;

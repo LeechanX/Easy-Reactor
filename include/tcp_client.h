@@ -13,17 +13,32 @@ public:
     tcp_client(event_loop* loop, const char* ip, unsigned short port);
 
     typedef void onconn_func(tcp_client* client, void* args);
+    typedef void oncls_func(tcp_client* client, void* args);
+
     //set up function after connection ok
-    void setup_connectcb(onconn_func* func, void *args = NULL)
+    void onConnection(onconn_func* func, void *args = NULL)
     {
         _onconnection = func;
         _onconn_args = args;
+    }
+
+    //set up function after connection closed
+    void onClose(oncls_func* func, void *args = NULL)
+    {
+        _onclose = func;
+        _onclose_args = args;
     }
 
     void call_onconnect()
     {
         if (_onconnection)
             _onconnection(this, _onconn_args);
+    }
+
+    void call_onclose()
+    {
+        if (_onclose)
+            _onclose(this, _onclose_args);
     }
 
     void add_msg_cb(int cmdid, msg_callback* msg_cb, void* usr_data = NULL) { _dispatcher.add_msg_cb(cmdid, msg_cb, usr_data); }
@@ -54,6 +69,9 @@ private:
     //when connection success, call _onconnection(_onconn_args)
     onconn_func* _onconnection;
     void* _onconn_args;
+    //when connection close, call _onclose(_onclose_args)
+    oncls_func* _onclose;
+    void* _onclose_args;
 };
 
 #endif
