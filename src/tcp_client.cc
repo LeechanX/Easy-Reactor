@@ -119,7 +119,9 @@ void tcp_client::do_connect()
 
 int tcp_client::send_data(const char* data, int datlen, int cmdid)//call by user
 {
-    bool need = (obuf.length == 0 && net_ok) ? true: false;//if need to add to event loop
+    if (!net_ok)
+        return -1;
+    bool need = (obuf.length == 0) ? true: false;//if need to add to event loop
     if (datlen + COMMU_HEAD_LENGTH > obuf.capacity - obuf.length)
     {
         error_log("no more space to write socket");
@@ -144,6 +146,7 @@ int tcp_client::send_data(const char* data, int datlen, int cmdid)//call by user
 
 int tcp_client::handle_read()
 {
+    assert(net_ok);
     int rn;
     if (::ioctl(_sockfd, FIONREAD, &rn) == -1)
     {
