@@ -101,6 +101,9 @@ void tcp_client::do_connect()
     if (ret == 0)
     {
         net_ok = true;
+        //call on connection callback(if has)
+        call_onconnect();
+
         info_log("connection success");
     }
     else
