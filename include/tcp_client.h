@@ -10,7 +10,7 @@
 class tcp_client: public net_commu
 {
 public:
-    tcp_client(event_loop* loop, const char* ip, unsigned short port);
+    tcp_client(event_loop* loop, const char* ip, unsigned short port, const char* name = NULL);
 
     typedef void onconn_func(tcp_client* client, void* args);
     typedef void oncls_func(tcp_client* client, void* args);
@@ -72,6 +72,7 @@ private:
     //when connection close, call _onclose(_onclose_args)
     oncls_func* _onclose;
     void* _onclose_args;
+    const char* _name;
 };
 
 #endif

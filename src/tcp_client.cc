@@ -62,14 +62,15 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     }
 }
 
-tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port):
+tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port, const char* name):
     net_ok(false), 
     ibuf(4194304),
     obuf(4194304),
     _sockfd(-1),
     _loop(loop),
     _onconnection(NULL),
-    _onconn_args(NULL)
+    _onconn_args(NULL),
+    _name(name)
 {
     //ignore SIGPIPE
     if (::signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -166,7 +167,10 @@ int tcp_client::handle_read()
     if (ret == 0)
     {
         //peer close connection
-        info_log("connection closed by peer");
+        if (_name)
+            info_log("%s client: connection closed by peer", _name);
+        else
+            info_log("client: connection closed by peer");
         clean_conn();
         return -1;
     }
