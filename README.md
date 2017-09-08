@@ -12,6 +12,7 @@ Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支�
 
 >服务器参数：
 >CPU个数：24   内存：128GB   网卡队列个数：24
+>
 >测试程序：
 >echo pingpong服务，每次传递100字节内容，见目录test/
 
