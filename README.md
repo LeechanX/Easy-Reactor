@@ -1,6 +1,6 @@
 # Easy Reactor
 
-Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支持多线程TCP服务器，单线程TCP服务器，单线程UDP服务器
+Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支持多线程TCP服务器，单线程TCP服务器，单线程UDP服务器等形式，可以让使用者完全专注于业务，快速开发出一个高效的服务器应用。
 
 在工作中开发基础服务器的经验总结、以及阅读陈硕《muduo》一书的收获，使得我以沉淀的心态做了这个项目
 
