@@ -4,7 +4,7 @@ Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支�
 
 在工作中开发基础服务器的经验总结、以及阅读陈硕《muduo》一书的收获，使得我以沉淀的心态做了这个项目
 
-此项目在我的另一个项目[易用稳定、高性能的服务间远程调用管理、调度、负载系统：Easy-Load-Balancer][1]中得到了全面应用，此项目的实战充分证明了Easy-Reactor服务框架的性能很高、使用也很简单
+此项目在我的另一个项目[易用稳定、高性能的服务间远程调用管理、调度、负载系统：Easy-Load-Balancer][1]中得到了全面应用，此项目的实战充分证明了Easy-Reactor服务框架的**性能很高、使用也很简单**
 
 [1]: https://github.com/LeechanX/Easy-Load-Balancer
 
