@@ -27,7 +27,7 @@ Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支�
 
 ### IO Event: 基于epoll
 
-一切IO事件设置为非阻塞，由Linux epoll进行管理，且TCP、UDP的可读事件均以EPOLLET即边缘模式注册
+一切IO事件设置为非阻塞，由Linux epoll进行管理，且TCP、UDP的可读、可写事件均以默认方式即水平模式注册
 
 ### Timer Event: Timer Queue设计
 

@@ -48,7 +48,7 @@ static void connection_cb(event_loop* loop, int fd, void* args)
         //call on connection callback(if has)
         cli->call_onconnect();
 
-        loop->add_ioev(fd, read_cb, EPOLLIN | EPOLLET, cli);
+        loop->add_ioev(fd, read_cb, EPOLLIN, cli);
         if (cli->obuf.length)
         {
             loop->add_ioev(fd, write_cb, EPOLLOUT, cli);

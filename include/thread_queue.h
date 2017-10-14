@@ -56,7 +56,7 @@ public:
     void set_loop(event_loop* loop, io_callback* proc, void* args = NULL)
     {
         _loop = loop;
-        _loop->add_ioev(_evfd, proc, EPOLLIN | EPOLLET, args);
+        _loop->add_ioev(_evfd, proc, EPOLLIN, args);
     }
 
 private:

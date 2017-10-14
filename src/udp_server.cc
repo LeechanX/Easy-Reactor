@@ -47,7 +47,7 @@ udp_server::udp_server(event_loop* loop, const char* ip, uint16_t port)
     info_log("server on %s:%u is running...", ip, port);
 
     //add accepter event
-    _loop->add_ioev(_sockfd, read_cb, EPOLLIN | EPOLLET, this);
+    _loop->add_ioev(_sockfd, read_cb, EPOLLIN, this);
 }
 
 udp_server::~udp_server()

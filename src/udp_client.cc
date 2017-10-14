@@ -36,7 +36,7 @@ udp_client::udp_client(event_loop* loop, const char* ip, uint16_t port)
     _loop = loop;
 
     //add accepter event
-    _loop->add_ioev(_sockfd, read_cb, EPOLLIN | EPOLLET, this);
+    _loop->add_ioev(_sockfd, read_cb, EPOLLIN, this);
 }
 
 udp_client::~udp_client()

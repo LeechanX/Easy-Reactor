@@ -11,7 +11,7 @@ typedef void timer_callback(event_loop* loop, void* usr_data);//Timer事件回�
 struct io_event//注册的IO事件
 {
     io_event(): read_cb(NULL), write_cb(NULL), rcb_args(NULL), wcb_args(NULL) { }
-    int mask;               //EPOLLIN EPOLLOUT EPOLLET
+    int mask;               //EPOLLIN EPOLLOUT
     io_callback* read_cb;  //callback when EPOLLIN comming
     io_callback* write_cb; //callback when EPOLLOUT comming
     void* rcb_args;   //extra arguments for read_cb

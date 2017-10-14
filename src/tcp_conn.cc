@@ -33,7 +33,7 @@ void tcp_conn::init(int connfd, event_loop* loop)
     int ret = ::setsockopt(_connfd, IPPROTO_TCP, TCP_NODELAY, &opend, sizeof(opend));
     error_if(ret < 0, "setsockopt TCP_NODELAY");
 
-    _loop->add_ioev(_connfd, tcp_rcb, EPOLLIN | EPOLLET, this);
+    _loop->add_ioev(_connfd, tcp_rcb, EPOLLIN, this);
 
     tcp_server::inc_conn();
 }
