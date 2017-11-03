@@ -72,12 +72,6 @@ tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port, co
     _onconn_args(NULL),
     _name(name)
 {
-    //ignore SIGPIPE
-    if (::signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-    {
-        error_log("signal ignore SIGPIPE");
-    }
-
     //construct server address
     ::bzero(&_servaddr, sizeof (_servaddr));
     _servaddr.sin_family = AF_INET;
