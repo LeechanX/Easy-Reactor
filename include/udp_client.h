@@ -22,6 +22,8 @@ public:
 
     virtual int send_data(const char* data, int datlen, int cmdid);
 
+    virtual int get_fd() { return _sockfd; }
+
 private:
     int _sockfd;
     char _rbuf[MSG_LENGTH_LIMIT];

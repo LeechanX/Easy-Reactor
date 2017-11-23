@@ -45,7 +45,9 @@ public:
 
     void do_connect();
 
-    int send_data(const char* data, int datlen, int cmdid);
+    virtual int send_data(const char* data, int datlen, int cmdid);
+
+    virtual int get_fd() { return _sockfd; }
 
     int handle_read();
 
@@ -59,11 +61,10 @@ public:
 
     bool net_ok;
     io_buffer ibuf, obuf;
-
+    struct sockaddr_in servaddr;
 private:
     int _sockfd;
     event_loop* _loop;
-    struct sockaddr_in _servaddr;
     socklen_t _addrlen;
     msg_dispatcher _dispatcher;
     //when connection success, call _onconnection(_onconn_args)

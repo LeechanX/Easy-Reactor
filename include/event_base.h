@@ -8,6 +8,9 @@ class event_loop;
 typedef void io_callback(event_loop* loop, int fd, void *args);//IO事件回调函数
 typedef void timer_callback(event_loop* loop, void* usr_data);//Timer事件回调函数
 
+//让当前loop在一次poll循环后执行指定任务
+typedef void (*pendingFunc)(event_loop*, void *);
+
 struct io_event//注册的IO事件
 {
     io_event(): read_cb(NULL), write_cb(NULL), rcb_args(NULL), wcb_args(NULL) { }

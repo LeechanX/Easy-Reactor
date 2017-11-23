@@ -43,7 +43,7 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     {
         //connect build success!
         cli->net_ok = true;
-        info_log("connection success");
+        info_log("connect %s:%d successfully", ::inet_ntoa(cli->servaddr.sin_addr), ntohs(cli->servaddr.sin_port));
 
         //call on connection callback(if has)
         cli->call_onconnect();
@@ -58,6 +58,7 @@ static void connection_cb(event_loop* loop, int fd, void* args)
     {
         //connect build error!
         //reconnection after 2s
+        info_log("connect %s:%d error, retry after 2s", ::inet_ntoa(cli->servaddr.sin_addr), ntohs(cli->servaddr.sin_port));
         loop->run_after(reconn_cb, cli, 2);
     }
 }
@@ -70,15 +71,17 @@ tcp_client::tcp_client(event_loop* loop, const char* ip, unsigned short port, co
     _loop(loop),
     _onconnection(NULL),
     _onconn_args(NULL),
+    _onclose(NULL),
+    _onclose_args(NULL),
     _name(name)
 {
     //construct server address
-    ::bzero(&_servaddr, sizeof (_servaddr));
-    _servaddr.sin_family = AF_INET;
-    int ret = ::inet_aton(ip, &_servaddr.sin_addr);
+    ::bzero(&servaddr, sizeof (servaddr));
+    servaddr.sin_family = AF_INET;
+    int ret = ::inet_aton(ip, &servaddr.sin_addr);
     exit_if(ret == 0, "ip format %s", ip);
-    _servaddr.sin_port = htons(port);
-    _addrlen = sizeof _servaddr;
+    servaddr.sin_port = htons(port);
+    _addrlen = sizeof servaddr;
 
     //connect
     do_connect();
@@ -92,14 +95,14 @@ void tcp_client::do_connect()
     _sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, IPPROTO_TCP);
     exit_if(_sockfd == -1, "socket()");
 
-    int ret = ::connect(_sockfd, (const struct sockaddr*)&_servaddr, _addrlen);
+    int ret = ::connect(_sockfd, (const struct sockaddr*)&servaddr, _addrlen);
     if (ret == 0)
     {
         net_ok = true;
         //call on connection callback(if has)
         call_onconnect();
 
-        info_log("connection success");
+        info_log("connect %s:%d successfully", ::inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
     }
     else
     {

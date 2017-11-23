@@ -17,6 +17,10 @@ public:
 
     thread_queue<queue_msg>* get_next_thread();
 
+    void run_task(int thd_index, pendingFunc task, void* args = NULL);
+
+    void run_task(pendingFunc task, void* args = NULL);
+
 private:
     int _curr_index;
     int _thread_cnt;

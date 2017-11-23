@@ -28,6 +28,9 @@ int tcp_server::_curr_conns = 0;
 pthread_mutex_t tcp_server::_mutex = PTHREAD_MUTEX_INITIALIZER;
 msg_dispatcher tcp_server::dispatcher;
 
+tcp_server::conn_callback tcp_server::connBuildCb = NULL;//用户设置连接建立后的回调函数
+tcp_server::conn_callback tcp_server::connCloseCb = NULL;//用户设置连接释放后的回调函数
+
 tcp_server::tcp_server(event_loop* loop, const char* ip, uint16_t port): _keepalive(false)
 {
     ::bzero(&_connaddr, sizeof (_connaddr));

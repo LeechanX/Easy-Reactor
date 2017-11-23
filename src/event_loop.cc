@@ -71,6 +71,7 @@ void event_loop::process_evs()
                 }
             }
         }
+        run_task();
     }
 }
 
@@ -111,6 +112,7 @@ void event_loop::add_ioev(int fd, io_callback* proc, int mask, void* args)
     event.data.fd = fd;
     int ret = ::epoll_ctl(_epfd, op, fd, &event);
     error_if(ret == -1, "epoll_ctl");
+    listening.insert(fd);//加入到监听集合中
 }
 
 void event_loop::del_ioev(int fd, int mask)
@@ -127,6 +129,7 @@ void event_loop::del_ioev(int fd, int mask)
         _io_evs.erase(it);
         ret = ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL);
         error_if(ret == -1, "epoll_ctl EPOLL_CTL_DEL");
+        listening.erase(fd);//从监听集合中删除
     }
     else
     {
@@ -141,6 +144,7 @@ void event_loop::del_ioev(int fd, int mask)
 void event_loop::del_ioev(int fd)
 {
     _io_evs.erase(fd);
+    listening.erase(fd);//从监听集合中删除
     ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -173,4 +177,22 @@ int event_loop::run_every(timer_callback cb, void* args, int sec, int millis)
 void event_loop::del_timer(int timer_id)
 {
     _timer_que->del_timer(timer_id);
+}
+
+void event_loop::add_task(pendingFunc func, void* args)
+{
+    std::pair<pendingFunc, void*> item(func, args);
+    _pendingFactors.push_back(item);
+}
+
+void event_loop::run_task()
+{
+    std::vector<std::pair<pendingFunc, void*> >::iterator it;
+    for (it = _pendingFactors.begin();it != _pendingFactors.end(); ++it)
+    {
+        pendingFunc func = it->first;
+        void* args = it->second;
+        func(this, args);
+    }
+    _pendingFactors.clear();
 }

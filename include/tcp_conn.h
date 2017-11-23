@@ -18,6 +18,8 @@ public:
 
     virtual int send_data(const char* data, int datlen, int cmdid);
 
+    virtual int get_fd() { return _connfd; }
+
     void clean_conn();
 private:
     int _connfd;

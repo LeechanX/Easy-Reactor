@@ -3,6 +3,7 @@
 
 #include "event_loop.h"
 #include "thread_pool.h"
+#include "net_commu.h"
 #include "tcp_conn.h"
 #include "msg_dispatcher.h"
 #include <netinet/in.h>
@@ -26,6 +27,8 @@ public:
 
     event_loop* loop() { return _loop; }
 
+    thread_pool* threadPool() { return _thd_pool; }
+
 private:
     int _sockfd;
     int _reservfd;
@@ -42,6 +45,14 @@ private:
 public:
     static msg_dispatcher dispatcher;
     static tcp_conn** conns;
+
+    typedef void (*conn_callback)(net_commu* com);
+
+    static conn_callback connBuildCb;//用户设置连接建立后的回调函数
+    static conn_callback connCloseCb;//用户设置连接释放后的回调函数
+
+    static void onConnBuild(conn_callback cb) { connBuildCb = cb; }
+    static void onConnClose(conn_callback cb) { connCloseCb = cb; }
 };
 
 #endif

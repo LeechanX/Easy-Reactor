@@ -23,9 +23,13 @@ void msg_comming_cb(event_loop* loop, int fd, void *args)
             }
             else
             {
-                conn = new tcp_conn(msg.connfd, loop);
-                exit_if(conn == NULL, "new tcp_conn");
+                tcp_server::conns[msg.connfd] = new tcp_conn(msg.connfd, loop);
+                exit_if(tcp_server::conns[msg.connfd] == NULL, "new tcp_conn");
             }
+        }
+        else if (msg.cmd_type == queue_msg::NEW_TASK)
+        {
+            loop->add_task(msg.task, msg.args);
         }
         else
         {
@@ -67,4 +71,22 @@ thread_queue<queue_msg>* thread_pool::get_next_thread()
     if (_curr_index == _thread_cnt)
         _curr_index = 0;
     return _pool[_curr_index++];
+}
+
+void thread_pool::run_task(int thd_index, pendingFunc task, void* args)
+{
+    queue_msg msg;
+    msg.cmd_type = queue_msg::NEW_TASK;
+    msg.task = task;
+    msg.args = args;
+    thread_queue<queue_msg>* cq = _pool[thd_index];
+    cq->send_msg(msg);
+}
+
+void thread_pool::run_task(pendingFunc task, void* args)
+{
+    for (int i = 0;i < _thread_cnt; ++i)
+    {
+        run_task(i, task);
+    }
 }

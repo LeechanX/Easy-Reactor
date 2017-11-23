@@ -33,6 +33,10 @@ void tcp_conn::init(int connfd, event_loop* loop)
     int ret = ::setsockopt(_connfd, IPPROTO_TCP, TCP_NODELAY, &opend, sizeof(opend));
     error_if(ret < 0, "setsockopt TCP_NODELAY");
 
+    //调用用户设置的连接建立后回调函数,主要是用于初始化作为连接内变量的：parameter参数
+    if (tcp_server::connBuildCb)
+        tcp_server::connBuildCb(this);
+
     _loop->add_ioev(_connfd, tcp_rcb, EPOLLIN, this);
 
     tcp_server::inc_conn();
@@ -136,6 +140,10 @@ int tcp_conn::send_data(const char* data, int datlen, int cmdid)
 
 void tcp_conn::clean_conn()
 {
+    //调用用户设置的连接释放后回调函数,主要是用于销毁作为连接内变量的：parameter参数
+    if (tcp_server::connCloseCb)
+        tcp_server::connCloseCb(this);
+    //连接清理工作
     tcp_server::dec_conn();
     _loop->del_ioev(_connfd);
     _loop = NULL;
