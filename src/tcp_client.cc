@@ -147,6 +147,7 @@ int tcp_client::send_data(const char* data, int datlen, int cmdid)//call by user
 
 int tcp_client::handle_read()
 {
+    //一次性读出来所有数据
     assert(net_ok);
     int rn;
     if (::ioctl(_sockfd, FIONREAD, &rn) == -1)
@@ -215,21 +216,28 @@ int tcp_client::handle_write()
 {
     assert(obuf.head == 0 && obuf.length);
     int ret;
-    do
+    while (obuf.length)
     {
-        ret = ::write(_sockfd, obuf.data, obuf.length);
-    } while (ret == -1 && errno == EINTR);
-
-    if (ret > 0)
-    {
-        obuf.pop(ret);
-        obuf.adjust();
-    }
-    else if (ret == -1 && errno != EAGAIN)
-    {
-        error_log("write()");
-        clean_conn();
-        return -1;
+        do
+        {
+            ret = ::write(_sockfd, obuf.data, obuf.length);
+        } while (ret == -1 && errno == EINTR);
+        if (ret > 0)
+        {
+            obuf.pop(ret);
+            obuf.adjust();
+        }
+        else if (ret == -1 && errno != EAGAIN)
+        {
+            error_log("write()");
+            clean_conn();
+            return -1;
+        }
+        else
+        {
+            //此时不可继续写
+            break;
+        }
     }
 
     if (!obuf.length)

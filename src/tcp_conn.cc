@@ -93,7 +93,8 @@ void tcp_conn::handle_read()
 
 void tcp_conn::handle_write()
 {
-    if (obuf.length())
+    //循环写
+    while (obuf.length())
     {
         int ret = obuf.write_fd(_connfd);
         if (ret == -1)
@@ -101,6 +102,11 @@ void tcp_conn::handle_write()
             error_log("write TCP buffer error, close connection");
             clean_conn();
             return ;
+        }
+        if (ret == 0)
+        {
+            //不是错误，仅返回为0表示此时不可继续写
+            break;
         }
     }
     if (!obuf.length())

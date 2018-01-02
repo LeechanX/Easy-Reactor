@@ -191,6 +191,7 @@ void tcp_buffer::pop(int len)
 
 int input_buffer::read_data(int fd)
 {
+    //一次性读出来所有数据
     int rn, ret;
     if (::ioctl(fd, FIONREAD, &rn) == -1)
     {
@@ -274,15 +275,19 @@ int output_buffer::send_data(const char* data, int datlen)
 int output_buffer::write_fd(int fd)
 {
     assert(_buf && _buf->head == 0);
-    int ret;
+    int writed;
     do
     {
-        ret = ::write(fd, _buf->data, _buf->length);
-    } while (ret == -1 && errno == EINTR);
-    if (ret > 0)
+        writed = ::write(fd, _buf->data, _buf->length);
+    } while (writed == -1 && errno == EINTR);
+    if (writed > 0)
     {
-        _buf->pop(ret);
+        _buf->pop(writed);
         _buf->adjust();
     }
-    return ret;
+    if (writed == -1 && errno == EAGAIN)
+    {
+        writed = 0;//不是错误，仅返回为0表示此时不可继续写
+    }
+    return writed;
 }
