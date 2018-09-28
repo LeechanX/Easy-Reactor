@@ -4,6 +4,7 @@
 #include <queue>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <algorithm>
 #include <sys/eventfd.h>
