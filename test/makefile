@@ -2,7 +2,7 @@ CXX=g++
 CFLAGS=-g -O2 -Wall -fPIC -Wno-deprecated
 
 INC=-I../include
-LIB=-L../lib -lereactor /usr/local/lib/libprotobuf.a -lrt
+LIB=-L../lib -lereactor /usr/local/lib/libprotobuf.a -lrt -lpthread
 OBJS = $(addsuffix .o, $(basename $(wildcard *.cc)))
 
 all:
