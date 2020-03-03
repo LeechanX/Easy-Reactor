@@ -45,7 +45,7 @@ void timer_queue::del_timer(int timer_id)
         _pioneer = -1;
         reset_timo();
     }
-    else if (_event_lst[0].ts < _pioneer)
+    else if (_event_lst[0].ts > _pioneer)
     {
         _pioneer = _event_lst[0].ts;
         reset_timo();
