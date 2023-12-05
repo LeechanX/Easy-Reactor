@@ -131,7 +131,8 @@ void timer_queue::heap_del(int pos)
     timer_event tmp = _event_lst[_count - 1];
     _event_lst[pos] = tmp;
     //update position
-    _position[tmp.timer_id] = pos;
+    if(to_del.timer_id != tmp.timer_id)
+        _position[tmp.timer_id] = pos;
 
     _count--;
     _event_lst.pop_back();
