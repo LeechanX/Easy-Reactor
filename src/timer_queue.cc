@@ -124,15 +124,16 @@ void timer_queue::heap_add(timer_event& te)
 void timer_queue::heap_del(int pos)
 {
     timer_event to_del = _event_lst[pos];
-    //update position
-    _position.erase(to_del.timer_id);
-
+    
     //rear item
     timer_event tmp = _event_lst[_count - 1];
     _event_lst[pos] = tmp;
     //update position
-    if(to_del.timer_id != tmp.timer_id)
-        _position[tmp.timer_id] = pos;
+
+    _position[tmp.timer_id] = pos;
+
+    //update position
+    _position.erase(to_del.timer_id);
 
     _count--;
     _event_lst.pop_back();
