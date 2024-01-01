@@ -8,6 +8,9 @@ Easy-Reactor是一个基于Reactor模式的Linux C++网络服务器框架，支�
 
 [1]: https://github.com/LeechanX/Easy-Load-Balancer
 
+#### 类关系图
+![image](https://github.com/woaishixiaoxiao/Easy-Reactor/blob/master/reator%E7%B1%BB%E5%9B%BE%E5%88%86%E6%9E%90.png)
+
 #### 性能一览
 
 >服务器参数：
